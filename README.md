@@ -1,8 +1,3 @@
----
-title: Asynchronous Distributed ML Adaptation (FL/TTA)
-
----
-
 # Asynchronous Distributed ML Adaptation (FL/TTA)
 
 ## Hint. Swarm Learning (More challenging than Federated Learning)
