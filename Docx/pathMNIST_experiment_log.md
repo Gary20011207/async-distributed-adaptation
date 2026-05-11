@@ -207,7 +207,14 @@ The augmentation run improved over the no-augmentation baseline and reduced over
 
 Async methods use events instead of rounds. One async event means one client update arrives and is applied to the server model. For a rough compute comparison with Sync FedAvg, 50 Sync FedAvg rounds with 10 clients correspond to about 500 async events.
 
-The full-dataset naive async experiment has been run. The staleness-aware full-dataset run has not been run yet.
+Both full-dataset async methods have been run for 500 events.
+
+Summary:
+
+| Method | Events | Best Test Acc | Final Test Acc |
+| --- | ---: | ---: | ---: |
+| Naive Async | 500 | 0.8854 | 0.8777 |
+| Staleness-aware Async | 500 | 0.8572 | 0.8565 |
 
 ### Naive Async Smoke Test
 
@@ -283,15 +290,58 @@ event=500  test_acc=0.8777
 
 Observation: naive async can improve substantially, but it is less stable than Sync FedAvg. A clear example is event 100, where the test accuracy dropped to `0.6337`. This is expected because naive async applies stale updates with a fixed `alpha=0.5`, even when staleness is high.
 
-## Suggested Next Experiments
+### Staleness-Aware Async, 500 Events, Full Dataset, Cosine LR, With Augmentation
 
-Run the remaining full-dataset staleness-aware async experiment with augmentation and cosine LR:
+This run is also approximately comparable to 50 Sync FedAvg rounds in terms of total client updates:
 
-```bash
-fed-pathmnist --method staleness_async --events 500 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 25 --device cuda
+```text
+50 sync rounds * 10 clients = 500 client updates
 ```
 
-For a 100 Sync FedAvg round comparison, use 1000 async events:
+Command:
+
+```bash
+PYTHONPATH=src python src/fed_pathmnist/run.py --method staleness_async --events 500 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 25 --device cuda
+```
+
+Observed result:
+
+```text
+train_examples=89996
+test_examples=7180
+best:  event 400, test_acc=0.8572
+final: event 500, test_acc=0.8565
+```
+
+Selected checkpoints:
+
+```text
+event=25   staleness=12 alpha=0.0385 test_acc=0.3465
+event=50   staleness=9  alpha=0.0500 test_acc=0.6040
+event=75   staleness=4  alpha=0.1000 test_acc=0.7568
+event=100  staleness=2  alpha=0.1667 test_acc=0.7942
+event=125  staleness=8  alpha=0.0556 test_acc=0.8011
+event=150  staleness=15 alpha=0.0312 test_acc=0.7943
+event=175  staleness=13 alpha=0.0357 test_acc=0.7948
+event=200  staleness=3  alpha=0.1250 test_acc=0.8338
+event=250  staleness=13 alpha=0.0357 test_acc=0.8453
+event=275  staleness=11 alpha=0.0417 test_acc=0.8455
+event=300  staleness=4  alpha=0.1000 test_acc=0.8499
+event=350  staleness=3  alpha=0.1250 test_acc=0.8558
+event=400  staleness=10 alpha=0.0455 test_acc=0.8572
+event=450  staleness=5  alpha=0.0833 test_acc=0.8565
+event=500  staleness=4  alpha=0.1000 test_acc=0.8565
+```
+
+Observation: staleness-aware async was more conservative because the effective alpha was reduced as staleness increased. It did not reach the same best accuracy as naive async within 500 events, but its curve was smoother and did not show a severe collapse like naive async at event 100.
+
+## Suggested Next Experiments
+
+Run longer full-dataset async experiments with augmentation and cosine LR:
+
+```bash
+fed-pathmnist --method naive_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 20 --device cuda
+```
 
 ```bash
 fed-pathmnist --method staleness_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 20 --device cuda
