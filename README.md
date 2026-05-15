@@ -1,7 +1,3 @@
----
-title: No-Clock Federated Adaptation
----
-
 # No-Clock Federated Adaptation  
 ## Staleness-Aware Asynchronous Aggregation under Heterogeneous Distributed Nodes
 
