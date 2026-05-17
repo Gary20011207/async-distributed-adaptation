@@ -205,9 +205,14 @@ The augmentation run improved over the no-augmentation baseline and reduced over
 
 ## Async Runs
 
-Async methods use events instead of rounds. One async event means one client update arrives and is applied to the server model. For a rough compute comparison with Sync FedAvg, 50 Sync FedAvg rounds with 10 clients correspond to about 500 async events.
+Async methods use events instead of rounds. One async event means one client update arrives and is applied to the server model. For rough compute comparison:
 
-Both full-dataset async methods have been run for 500 events.
+```text
+50 Sync FedAvg rounds * 10 clients = 500 async events
+100 Sync FedAvg rounds * 10 clients = 1000 async events
+```
+
+Both full-dataset async methods have been run for 500 and 1000 events.
 
 Summary:
 
@@ -215,6 +220,8 @@ Summary:
 | --- | ---: | ---: | ---: |
 | Naive Async | 500 | 0.8854 | 0.8777 |
 | Staleness-aware Async | 500 | 0.8572 | 0.8565 |
+| Naive Async | 1000 | 0.9003 | 0.8903 |
+| Staleness-aware Async | 1000 | 0.8830 | 0.8791 |
 
 ### Naive Async Smoke Test
 
@@ -335,18 +342,112 @@ event=500  staleness=4  alpha=0.1000 test_acc=0.8565
 
 Observation: staleness-aware async was more conservative because the effective alpha was reduced as staleness increased. It did not reach the same best accuracy as naive async within 500 events, but its curve was smoother and did not show a severe collapse like naive async at event 100.
 
+### Naive Async, 1000 Events, Full Dataset, Cosine LR, With Augmentation
+
+This run is approximately comparable to 100 Sync FedAvg rounds in terms of total client updates:
+
+```text
+100 sync rounds * 10 clients = 1000 client updates
+```
+
+Command:
+
+```bash
+PYTHONPATH=src python src/fed_pathmnist/run.py --method naive_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 50 --device cuda
+```
+
+Observed result:
+
+```text
+train_examples=89996
+test_examples=7180
+best:  event 700, test_acc=0.9003
+final: event 1000, test_acc=0.8903
+```
+
+Selected checkpoints:
+
+```text
+event=50    staleness=9  alpha=0.5000 test_acc=0.8387
+event=100   staleness=2  alpha=0.5000 test_acc=0.7609
+event=150   staleness=15 alpha=0.5000 test_acc=0.8014
+event=200   staleness=3  alpha=0.5000 test_acc=0.8393
+event=250   staleness=13 alpha=0.5000 test_acc=0.8602
+event=300   staleness=4  alpha=0.5000 test_acc=0.8593
+event=350   staleness=3  alpha=0.5000 test_acc=0.8730
+event=400   staleness=10 alpha=0.5000 test_acc=0.8869
+event=450   staleness=5  alpha=0.5000 test_acc=0.8864
+event=500   staleness=4  alpha=0.5000 test_acc=0.8766
+event=550   staleness=10 alpha=0.5000 test_acc=0.8792
+event=600   staleness=6  alpha=0.5000 test_acc=0.8975
+event=650   staleness=14 alpha=0.5000 test_acc=0.8866
+event=700   staleness=5  alpha=0.5000 test_acc=0.9003
+event=750   staleness=12 alpha=0.5000 test_acc=0.8822
+event=800   staleness=10 alpha=0.5000 test_acc=0.8915
+event=850   staleness=6  alpha=0.5000 test_acc=0.8921
+event=900   staleness=10 alpha=0.5000 test_acc=0.8848
+event=950   staleness=12 alpha=0.5000 test_acc=0.8884
+event=1000  staleness=4  alpha=0.5000 test_acc=0.8903
+```
+
+Observation: with a fairer 1000-event budget, naive async nearly matched Sync FedAvg. Its best accuracy `0.9003` is close to Sync FedAvg's best `0.9033`, but the final accuracy `0.8903` remained lower and the curve was still unstable.
+
+### Staleness-Aware Async, 1000 Events, Full Dataset, Cosine LR, With Augmentation
+
+This run is approximately comparable to 100 Sync FedAvg rounds in terms of total client updates:
+
+```text
+100 sync rounds * 10 clients = 1000 client updates
+```
+
+Command:
+
+```bash
+PYTHONPATH=src python src/fed_pathmnist/run.py --method staleness_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 50 --device cuda
+```
+
+Observed result:
+
+```text
+train_examples=89996
+test_examples=7180
+best:  event 550, test_acc=0.8830
+final: event 1000, test_acc=0.8791
+```
+
+Selected checkpoints:
+
+```text
+event=50    staleness=9  alpha=0.0500 test_acc=0.5904
+event=100   staleness=2  alpha=0.1667 test_acc=0.7588
+event=150   staleness=15 alpha=0.0312 test_acc=0.7864
+event=200   staleness=3  alpha=0.1250 test_acc=0.8272
+event=250   staleness=13 alpha=0.0357 test_acc=0.8368
+event=300   staleness=4  alpha=0.1000 test_acc=0.8482
+event=350   staleness=3  alpha=0.1250 test_acc=0.8682
+event=400   staleness=10 alpha=0.0455 test_acc=0.8572
+event=450   staleness=5  alpha=0.0833 test_acc=0.8643
+event=500   staleness=4  alpha=0.1000 test_acc=0.8727
+event=550   staleness=10 alpha=0.0455 test_acc=0.8830
+event=600   staleness=6  alpha=0.0714 test_acc=0.8797
+event=650   staleness=14 alpha=0.0333 test_acc=0.8706
+event=700   staleness=5  alpha=0.0833 test_acc=0.8671
+event=750   staleness=12 alpha=0.0385 test_acc=0.8753
+event=800   staleness=10 alpha=0.0455 test_acc=0.8784
+event=850   staleness=6  alpha=0.0714 test_acc=0.8799
+event=900   staleness=10 alpha=0.0455 test_acc=0.8780
+event=950   staleness=12 alpha=0.0385 test_acc=0.8788
+event=1000  staleness=4  alpha=0.1000 test_acc=0.8791
+```
+
+Observation: 1000 events improved staleness-aware async substantially over its 500-event run. However, the current inverse staleness decay is likely too conservative; it improved stability but limited peak accuracy compared with naive async. The next step should tune the staleness decay strength, for example `alpha / (1 + staleness / tau)`.
+
 ## Suggested Next Experiments
 
-Run longer full-dataset async experiments with augmentation and cosine LR:
+Run decay and alpha tuning experiments:
 
 ```bash
-fed-pathmnist --method naive_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 20 --device cuda
+staleness_async with tau-based inverse decay
+alpha sweep: 0.1, 0.2, 0.3, 0.5
+buffered async aggregation
 ```
-
-```bash
-fed-pathmnist --method staleness_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 20 --device cuda
-```
-
-Async uses events instead of rounds. One event means one client update arrives and is applied to the server model.
-
-For fair comparison, choose an async event count that roughly matches the amount of client training in Sync FedAvg. Since one Sync FedAvg round with 10 clients uses 10 client updates, 100 Sync FedAvg rounds correspond roughly to 1000 async events.

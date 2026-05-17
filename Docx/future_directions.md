@@ -15,13 +15,13 @@ Current best observed results on full PathMNIST with 10 IID clients:
 | Method | Setting | Best Test Acc | Final Test Acc |
 | --- | --- | ---: | ---: |
 | Sync FedAvg | 100 rounds, augmentation, cosine LR | 0.9033 | 0.8961 |
-| Naive Async | 500 events, augmentation, cosine LR | 0.8854 | 0.8777 |
-| Staleness-aware Async | 500 events, augmentation, cosine LR | 0.8572 | 0.8565 |
+| Naive Async | 1000 events, augmentation, cosine LR | 0.9003 | 0.8903 |
+| Staleness-aware Async | 1000 events, augmentation, cosine LR | 0.8830 | 0.8791 |
 
 For rough comparison:
 
 ```text
-50 Sync FedAvg rounds * 10 clients = 500 async client-update events
+100 Sync FedAvg rounds * 10 clients = 1000 async client-update events
 ```
 
 ## Direction 1: Improve Async Performance
@@ -37,7 +37,7 @@ How can async federated learning approach or surpass Sync FedAvg accuracy while 
 Possible improvements:
 
 - Tune async mixing coefficient `alpha`
-- Run longer async experiments, especially `1000 events`
+- Tune async after the 1000-event baseline
 - Try different staleness decay functions:
   - inverse decay: `alpha / (1 + staleness)`
   - polynomial decay
