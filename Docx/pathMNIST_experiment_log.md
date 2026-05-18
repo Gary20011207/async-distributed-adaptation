@@ -442,12 +442,114 @@ event=1000  staleness=4  alpha=0.1000 test_acc=0.8791
 
 Observation: 1000 events improved staleness-aware async substantially over its 500-event run. However, the current inverse staleness decay is likely too conservative; it improved stability but limited peak accuracy compared with naive async. The next step should tune the staleness decay strength, for example `alpha / (1 + staleness / tau)`.
 
+### Staleness Decay Tuning
+
+The code now supports multiple staleness decay rules:
+
+```bash
+--staleness-decay inverse|tau_inverse|floor_tau_inverse|exp|hinge
+--staleness-tau 5
+--min-alpha 0.05
+```
+
+Implemented alpha formulas:
+
+```text
+inverse:           alpha / (1 + staleness)
+tau_inverse:       alpha / (1 + staleness / tau)
+floor_tau_inverse: max(min_alpha, alpha / (1 + staleness / tau))
+exp:               alpha * exp(-staleness / tau)
+hinge:             alpha if staleness <= tau else alpha / (1 + staleness - tau)
+```
+
+The first tuning pass tested `tau_inverse` with `alpha=0.5`.
+
+#### Tau Inverse, Tau = 3
+
+Command:
+
+```bash
+PYTHONPATH=src python src/fed_pathmnist/run.py --method staleness_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 100 --alpha 0.5 --staleness-decay tau_inverse --staleness-tau 3 --device cuda
+```
+
+Observed result:
+
+```text
+best:  event 800, test_acc=0.8873
+final: event 1000, test_acc=0.8872
+```
+
+Selected checkpoints:
+
+```text
+event=100   staleness=2  alpha=0.3000 test_acc=0.8038
+event=200   staleness=3  alpha=0.2500 test_acc=0.8426
+event=300   staleness=4  alpha=0.2143 test_acc=0.8696
+event=400   staleness=10 alpha=0.1154 test_acc=0.8809
+event=500   staleness=4  alpha=0.2143 test_acc=0.8848
+event=600   staleness=6  alpha=0.1667 test_acc=0.8859
+event=700   staleness=5  alpha=0.1875 test_acc=0.8851
+event=800   staleness=10 alpha=0.1154 test_acc=0.8873
+event=900   staleness=10 alpha=0.1154 test_acc=0.8864
+event=1000  staleness=4  alpha=0.2143 test_acc=0.8872
+```
+
+#### Tau Inverse, Tau = 5
+
+Command:
+
+```bash
+PYTHONPATH=src python src/fed_pathmnist/run.py --method staleness_async --events 1000 --clients 10 --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 --local-epochs 1 --augment --eval-every 100 --alpha 0.5 --staleness-decay tau_inverse --staleness-tau 5 --device cuda
+```
+
+Observed result:
+
+```text
+best:  event 1000, test_acc=0.8914
+final: event 1000, test_acc=0.8914
+```
+
+Selected checkpoints:
+
+```text
+event=100   staleness=2  alpha=0.3571 test_acc=0.8146
+event=200   staleness=3  alpha=0.3125 test_acc=0.8532
+event=300   staleness=4  alpha=0.2778 test_acc=0.8741
+event=400   staleness=10 alpha=0.1667 test_acc=0.8864
+event=500   staleness=4  alpha=0.2778 test_acc=0.8865
+event=600   staleness=6  alpha=0.2273 test_acc=0.8903
+event=700   staleness=5  alpha=0.2500 test_acc=0.8872
+event=800   staleness=10 alpha=0.1667 test_acc=0.8909
+event=900   staleness=10 alpha=0.1667 test_acc=0.8905
+event=1000  staleness=4  alpha=0.2778 test_acc=0.8914
+```
+
+Current tuning summary:
+
+| Staleness Decay | Tau | Best Test Acc | Final Test Acc |
+| --- | ---: | ---: | ---: |
+| inverse | n/a | 0.8830 | 0.8791 |
+| tau_inverse | 3 | 0.8873 | 0.8872 |
+| tau_inverse | 5 | 0.8914 | 0.8914 |
+
+Observation: weakening the staleness penalty improved staleness-aware async. `tau=5` is the best tested setting so far. It improved final accuracy from `0.8791` to `0.8914`, which is close to naive async final `0.8903`, but still below naive async best `0.9003` and Sync FedAvg best `0.9033`.
+
+Planned but not run yet:
+
+```text
+tau_inverse tau=10
+floor_tau_inverse tau=5 min_alpha=0.05
+floor_tau_inverse tau=10 min_alpha=0.05
+```
+
 ## Suggested Next Experiments
 
 Run decay and alpha tuning experiments:
 
 ```bash
-staleness_async with tau-based inverse decay
+tau_inverse tau=10
+floor_tau_inverse tau=5 min_alpha=0.05
+floor_tau_inverse tau=10 min_alpha=0.05
 alpha sweep: 0.1, 0.2, 0.3, 0.5
 buffered async aggregation
 ```

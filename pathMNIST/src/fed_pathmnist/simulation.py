@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import heapq
+import math
 import random
 from dataclasses import dataclass, field
 from typing import Callable, Literal
@@ -14,6 +15,7 @@ from fed_pathmnist.model import create_model, get_parameters, interpolate, set_p
 
 
 Method = Literal["sync_fedavg", "naive_async", "staleness_async"]
+StalenessDecay = Literal["inverse", "tau_inverse", "floor_tau_inverse", "exp", "hinge"]
 
 
 @dataclass(order=True)
@@ -99,6 +101,9 @@ def run_async(
     seed: int,
     eval_every: int,
     lr_schedule: Callable[[int], float],
+    staleness_decay: StalenessDecay,
+    staleness_tau: float,
+    min_alpha: float,
 ) -> list[np.ndarray]:
     rng = random.Random(seed)
     global_model = create_model().to(device)
@@ -139,7 +144,13 @@ def run_async(
         staleness = max(global_version - job.start_version, 0)
         effective_alpha = alpha
         if method == "staleness_async":
-            effective_alpha = alpha / (1.0 + staleness)
+            effective_alpha = compute_staleness_alpha(
+                alpha=alpha,
+                staleness=staleness,
+                decay=staleness_decay,
+                tau=staleness_tau,
+                min_alpha=min_alpha,
+            )
 
         global_parameters = interpolate(global_parameters, updated, effective_alpha)
         global_version += 1
@@ -158,6 +169,35 @@ def run_async(
         submit(job.cid)
 
     return global_parameters
+
+
+def compute_staleness_alpha(
+    *,
+    alpha: float,
+    staleness: int,
+    decay: StalenessDecay,
+    tau: float,
+    min_alpha: float,
+) -> float:
+    if tau <= 0:
+        raise ValueError("staleness_tau must be positive")
+    if min_alpha < 0:
+        raise ValueError("min_alpha must be non-negative")
+
+    if decay == "inverse":
+        effective = alpha / (1.0 + staleness)
+    elif decay == "tau_inverse":
+        effective = alpha / (1.0 + staleness / tau)
+    elif decay == "floor_tau_inverse":
+        effective = max(min_alpha, alpha / (1.0 + staleness / tau))
+    elif decay == "exp":
+        effective = alpha * math.exp(-staleness / tau)
+    elif decay == "hinge":
+        effective = alpha if staleness <= tau else alpha / (1.0 + staleness - tau)
+    else:
+        raise ValueError(f"Unsupported staleness decay: {decay}")
+
+    return min(alpha, effective)
 
 
 def _weighted_average(

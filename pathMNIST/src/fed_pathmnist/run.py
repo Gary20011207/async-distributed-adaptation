@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from fed_pathmnist.data import iid_client_loaders, load_datasets, test_loader
-from fed_pathmnist.simulation import build_clients, run_async, run_sync_fedavg
+from fed_pathmnist.simulation import StalenessDecay, build_clients, run_async, run_sync_fedavg
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,6 +34,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--step-size", type=int, default=30)
     parser.add_argument("--gamma", type=float, default=0.1)
     parser.add_argument("--alpha", type=float, default=0.5)
+    parser.add_argument(
+        "--staleness-decay",
+        choices=["inverse", "tau_inverse", "floor_tau_inverse", "exp", "hinge"],
+        default="inverse",
+    )
+    parser.add_argument("--staleness-tau", type=float, default=5.0)
+    parser.add_argument("--min-alpha", type=float, default=0.0)
     parser.add_argument("--max-delay", type=float, default=5.0)
     parser.add_argument("--eval-every", type=int, default=5)
     parser.add_argument("--max-train-samples", type=int, default=None)
@@ -120,7 +127,9 @@ def main() -> None:
         "config "
         f"method={args.method} clients={args.clients} "
         f"train_examples={len(trainset)} test_examples={len(testset)} "
-        f"device={device} lr_scheduler={args.lr_scheduler} augment={args.augment}",
+        f"device={device} lr_scheduler={args.lr_scheduler} augment={args.augment} "
+        f"staleness_decay={args.staleness_decay} staleness_tau={args.staleness_tau} "
+        f"min_alpha={args.min_alpha}",
         flush=True,
     )
 
@@ -144,6 +153,9 @@ def main() -> None:
             seed=args.seed,
             eval_every=args.eval_every,
             lr_schedule=lr_schedule,
+            staleness_decay=args.staleness_decay,
+            staleness_tau=args.staleness_tau,
+            min_alpha=args.min_alpha,
         )
 
 

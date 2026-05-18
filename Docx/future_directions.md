@@ -17,6 +17,7 @@ Current best observed results on full PathMNIST with 10 IID clients:
 | Sync FedAvg | 100 rounds, augmentation, cosine LR | 0.9033 | 0.8961 |
 | Naive Async | 1000 events, augmentation, cosine LR | 0.9003 | 0.8903 |
 | Staleness-aware Async | 1000 events, augmentation, cosine LR | 0.8830 | 0.8791 |
+| Staleness-aware Async, tau inverse | 1000 events, tau=5, augmentation, cosine LR | 0.8914 | 0.8914 |
 
 For rough comparison:
 
@@ -40,6 +41,8 @@ Possible improvements:
 - Tune async after the 1000-event baseline
 - Try different staleness decay functions:
   - inverse decay: `alpha / (1 + staleness)`
+  - tau inverse decay: `alpha / (1 + staleness / tau)`
+  - floor tau inverse decay: `max(min_alpha, alpha / (1 + staleness / tau))`
   - polynomial decay
   - exponential decay
   - hinge decay
@@ -67,6 +70,17 @@ Recommended first implementation tasks:
    - `alpha=0.5`
 4. Run staleness decay comparison.
 5. Produce accuracy curves and summary tables.
+
+Current staleness tuning progress:
+
+| Decay | Tau | Best Test Acc | Final Test Acc | Status |
+| --- | ---: | ---: | ---: | --- |
+| inverse | n/a | 0.8830 | 0.8791 | done |
+| tau_inverse | 3 | 0.8873 | 0.8872 | done |
+| tau_inverse | 5 | 0.8914 | 0.8914 | done |
+| tau_inverse | 10 | TBD | TBD | not run |
+| floor_tau_inverse | 5 | TBD | TBD | not run |
+| floor_tau_inverse | 10 | TBD | TBD | not run |
 
 Expected value:
 

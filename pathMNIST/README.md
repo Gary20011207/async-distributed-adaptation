@@ -46,4 +46,20 @@ fed-pathmnist --method naive_async --events 20 --max-train-samples 1000 --max-te
 fed-pathmnist --method staleness_async --events 20 --max-train-samples 1000 --max-test-samples 300
 ```
 
+Tune staleness-aware async:
+
+```bash
+fed-pathmnist --method staleness_async --events 1000 --augment --lr-scheduler cosine --staleness-decay tau_inverse --staleness-tau 5 --device cuda
+```
+
+Available staleness decay modes:
+
+```text
+inverse
+tau_inverse
+floor_tau_inverse
+exp
+hinge
+```
+
 Use full data by omitting `--max-train-samples` and `--max-test-samples`.
