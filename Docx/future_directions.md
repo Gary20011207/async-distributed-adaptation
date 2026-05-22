@@ -150,37 +150,35 @@ Swarm-compatible target:
 multiple nodes each hold model state, exchange updates, and aggregate without relying on one central server
 ```
 
-Recommended first step:
+First step status:
 
 ```text
-Build swarm simulation compatibility first, not real peer-to-peer networking.
+Implemented local swarm-style simulation first, not real peer-to-peer networking.
 ```
 
-Possible simulation features:
+Implemented simulation features:
 
 - Node-level model states
 - Local client training per node
-- Message/update objects
 - Neighbor-based aggregation
 - Topology options:
   - ring
   - fully connected
   - random graph
-  - star
 - Periodic model exchange
 - Decentralized averaging
+- IID, label-skew, and quantity-skew partitions
+- Mean, weighted mean, and coordinate median parameter merge
 
-Suggested code refactor:
+Implemented code organization:
 
-1. Extract aggregation logic into a shared interface.
-2. Define a `NodeState` object.
-3. Define update/message records.
-4. Separate:
-   - local training
-   - update transport
-   - aggregation
-   - evaluation
-5. Implement topology-driven simulation.
+1. `pathmnist_shared`: shared PathMNIST dataset/model helpers.
+2. `fed_pathmnist`: Flower-based server-centric federated learning.
+3. `swarm_pathmnist`: decentralized swarm-style simulation.
+4. `swarm_pathmnist.partition`: IID/non-IID node partitioning.
+5. `swarm_pathmnist.merge`: decentralized parameter merge methods.
+6. `swarm_pathmnist.node`: local node training.
+7. `swarm_pathmnist.simulation`: topology-driven swarm rounds.
 
 Possible research question:
 
