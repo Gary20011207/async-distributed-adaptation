@@ -52,8 +52,9 @@ def main() -> None:
 
     frame = frame[(frame["partition"] == args.partition) & (frame["model"] == args.model)]
     frame = frame[frame["method"].isin(METHOD_ORDER)]
+    frame = frame[frame["official"]]
     if frame.empty:
-        raise SystemExit("No matching summary rows found.")
+        raise SystemExit("No matching official summary rows found.")
 
     seeded = _select_seed_representatives(frame)
     seeded.to_csv(outdir / "seeded_summary.csv", index=False)
@@ -75,13 +76,17 @@ def _summary_row(path: Path) -> dict[str, Any]:
     summary = json.loads(path.read_text(encoding="utf-8"))
     config = summary.get("config", {})
     method = summary.get("method", "")
+    dataset = _dataset_from_summary(path, method, config)
+    model = str(config.get("model") or "resnet18")
+    partition = str(config.get("partition") or "iid")
     return {
-        "dataset": _dataset_from_summary(path, method, config),
+        "dataset": dataset,
         "method": method,
         "method_label": METHOD_LABELS.get(method, method),
         "seed": int(config.get("seed", 42)),
-        "model": str(config.get("model", "resnet18")),
-        "partition": str(config.get("partition", "iid") or "iid"),
+        "model": model,
+        "partition": partition,
+        "official": _is_official_summary(summary, config, method, dataset),
         "budget": _update_budget(summary, config),
         "best_acc": _to_float(summary.get("best_test_acc")),
         "final_acc": _to_float(summary.get("final_test_acc")),
@@ -90,6 +95,99 @@ def _summary_row(path: Path) -> dict[str, Any]:
         "path": str(path),
     }
 
+
+
+
+def _is_official_summary(summary: dict[str, Any], config: dict[str, Any], method: str, dataset: str) -> bool:
+    if config.get("synthetic"):
+        return False
+    target_budget = 1000.0 if dataset == "pathmnist" else 300.0
+    budget = _update_budget(summary, config)
+    if budget is None or abs(float(budget) - target_budget) > 1e-6:
+        return False
+    train_limit, test_limit = _official_sample_limits(dataset)
+    common_checks = [
+        str(config.get("model") or "resnet18") == "resnet18",
+        str(config.get("partition") or "iid") == "iid",
+        _eq_int(config.get("clients", 10), 10),
+        _eq_int(config.get("batch_size", 128), 128),
+        _eq_float(config.get("lr", 0.01), 0.01),
+        str(config.get("lr_scheduler", "cosine")) == "cosine",
+        _eq_float(config.get("min_lr", 0.0001), 0.0001),
+        _eq_int(config.get("local_epochs", 1), 1),
+        bool(config.get("augment", True)) is True,
+        config.get("max_train_samples") == train_limit,
+        config.get("max_test_samples") == test_limit,
+    ]
+    if not all(common_checks):
+        return False
+    if method == "sync_fedavg":
+        return True
+    if not _official_async_config(config):
+        return False
+    if method == "naive_async":
+        return _eq_float(config.get("alpha"), 0.5)
+    if method == "staleness_async":
+        return _eq_float(config.get("alpha"), 0.5) and config.get("staleness_decay") == "inverse"
+    if method == "fedbuff_async":
+        return (
+            _eq_float(config.get("alpha"), 0.5)
+            and _eq_int(config.get("buffer_size"), 5)
+            and config.get("staleness_decay") == "inverse"
+        )
+    if method in {"agreement_fedbuff_async", "caa_fedbuff_v2"}:
+        checks = [
+            _eq_int(config.get("buffer_size"), 5),
+            _eq_float(config.get("alpha"), 0.62),
+            config.get("staleness_decay") == "hinge",
+            _eq_float(config.get("staleness_hinge_b"), 5.0),
+            _eq_float(config.get("staleness_hinge_a"), 0.05),
+            _eq_float(config.get("agreement_epsilon"), 0.15),
+            _eq_float(config.get("agreement_power"), 0.5),
+            _eq_float(config.get("agreement_drop_threshold"), -0.05),
+            _eq_float(config.get("delta_clip_multiplier"), 1.8),
+            _eq_float(config.get("adaptive_alpha_min"), 0.20),
+            _eq_float(config.get("adaptive_alpha_max"), 0.70),
+            _eq_float(config.get("adaptive_alpha_boost"), 0.25),
+            _eq_float(config.get("adaptive_staleness_scale"), 10.0),
+        ]
+        if method == "caa_fedbuff_v2":
+            checks.extend([
+                _eq_float(config.get("server_delta_momentum"), 0.8),
+                _eq_float(config.get("history_agreement_blend"), 0.25),
+                _eq_float(config.get("client_fairness_power"), 0.5),
+            ])
+        return all(checks)
+    return False
+
+
+def _official_sample_limits(dataset: str) -> tuple[int | None, int | None]:
+    if dataset in {"organamnist", "organcmnist", "organsmnist"}:
+        return 15000, 4000
+    if dataset == "octmnist":
+        return 15000, 3000
+    if dataset == "tissuemnist":
+        return 20000, 5000
+    return None, None
+
+
+def _official_async_config(config: dict[str, Any]) -> bool:
+    return (
+        config.get("delay_mode") == "heterogeneous"
+        and _eq_float(config.get("straggler_ratio"), 0.2)
+        and _eq_float(config.get("straggler_multiplier"), 5.0)
+        and _eq_int(config.get("eval_every", 20), 20)
+    )
+
+
+def _eq_float(value: Any, expected: float, tol: float = 1e-9) -> bool:
+    actual = _to_float(value)
+    return actual is not None and abs(actual - expected) <= tol
+
+
+def _eq_int(value: Any, expected: int) -> bool:
+    actual = _to_float(value)
+    return actual is not None and int(actual) == expected
 
 def _select_seed_representatives(frame: pd.DataFrame) -> pd.DataFrame:
     frame = frame.copy()

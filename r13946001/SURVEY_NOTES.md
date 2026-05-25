@@ -91,6 +91,24 @@ direction, especially when stale, it should contribute less or be dropped.
 
 Source: https://www.sciencedirect.com/science/article/pii/S1389128624005620
 
+### Non-IID federated learning survey
+
+Non-IID FL surveys support the medical/hospital framing: different hospitals can
+observe different patient populations, scanners, imaging protocols, and label
+distributions. This motivates the Dirichlet non-IID experiment as a distributed
+data heterogeneity stress test, not just another ML benchmark split.
+
+Source: https://www.sciencedirect.com/science/article/pii/S0925231221013254
+
+### Async FL under heterogeneity and fast-client dominance
+
+Recent async FL work emphasizes that system heterogeneity creates both stale
+updates and participation imbalance: fast clients can dominate the event stream
+while slower clients become stale. This supports the CAA-v2 fairness credit and
+the report metrics for client contribution Gini/min-max ratio.
+
+Source: https://www.sciencedirect.com/science/article/pii/S1389128626002379
+
 ## CAA-FedBuff Rule
 
 For every buffered update:

@@ -137,6 +137,7 @@ Create slide-friendly dataset-level figures and refresh the report notes:
 ```bash
 python scripts/plot_report_summary.py --result-dir results --outdir figures/report
 python scripts/plot_seeded_summary.py --result-dir results --outdir figures/report
+python scripts/plot_distributed_systems_summary.py --result-dir results --outdir figures/report
 python scripts/plot_classification_results.py --result-dir results --checkpoint-dir checkpoints --outdir figures/classification
 python scripts/summarize_results.py --result-dir results --out ../REPORT_NOTES.md
 ```
@@ -162,6 +163,8 @@ figures/report/seeded_summary.csv
 figures/report/mean_std_summary.csv
 figures/report/fairness_protocol.csv
 figures/report/existing_vs_ours_table.csv
+figures/report/distributed_systems_summary.csv
+figures/report/caa_v2_ablation_components.csv
 ```
 
 Use these report metrics for the distributed-systems story:
@@ -189,6 +192,17 @@ nohup bash scripts/run_report_completion_24h.sh > logs/report24_nohup.log 2>&1 &
 This runner refreshes the current report pack, adds BreastMNIST/TissueMNIST
 single-seed fair coverage, runs `small_cnn` backbone checks, and performs
 CAA-v2 ablations for server trajectory agreement and client fairness credit.
+
+Start the distributed-systems-focused 24-hour runner:
+
+```bash
+nohup bash scripts/run_distributed_systems_24h.sh > logs/distsys24_nohup.log 2>&1 &
+```
+
+This runner adds Dirichlet non-IID hospital scenarios, straggler/delay stress
+tests, CAA-v2 ablations, and system metrics such as p95 staleness, simulated
+time-to-accuracy, and client contribution imbalance. It writes 144 ten-minute
+heartbeats and continues idle QA heartbeats if the queue finishes early.
 
 Generated artifact policy:
 

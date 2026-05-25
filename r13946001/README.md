@@ -23,6 +23,7 @@ Current additions in this copy:
 - slide-friendly report plots under `figures/report/`
 - multi-seed mean/std reporting and classification diagnostics
 - 24-hour report-completion runner for extra datasets, small-CNN checks, and CAA-v2 ablations
+- distributed-systems 24-hour runner for non-IID hospital scenarios, straggler stress tests, CAA-v2 ablations, and system metrics beyond accuracy
 
 Current completed dataset coverage:
 
@@ -65,6 +66,7 @@ Plot logs:
 PYTHONPATH=src python -m fed_pathmnist.plot_results --csv results/*.csv --outdir figures
 python scripts/plot_report_summary.py --result-dir results --outdir figures/report
 python scripts/plot_seeded_summary.py --result-dir results --outdir figures/report
+python scripts/plot_distributed_systems_summary.py --result-dir results --outdir figures/report
 python scripts/plot_classification_results.py --result-dir results --checkpoint-dir checkpoints --outdir figures/classification
 python scripts/summarize_results.py --result-dir results --out ../REPORT_NOTES.md
 ```
@@ -108,6 +110,21 @@ The runner writes:
 ```text
 logs/report24_heartbeat_YYYYMMDD_HHMMSS.log
 logs/report24_actions_YYYYMMDD_HHMMSS.log
+```
+
+Start the distributed-systems-focused 24-hour runner:
+
+```bash
+cd r13946001/pathMNIST
+nohup bash scripts/run_distributed_systems_24h.sh > logs/distsys24_nohup.log 2>&1 &
+```
+
+The runner writes 144 ten-minute heartbeats and keeps running idle QA
+heartbeats even if its experiment queue finishes early:
+
+```text
+logs/distsys24_heartbeat_YYYYMMDD_HHMMSS.log
+logs/distsys24_actions_YYYYMMDD_HHMMSS.log
 ```
 
 Push hygiene:
