@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clockless Federated Adaptation</title>
+<style>
+@page { size: 1280px 720px; margin: 0; }
+body { margin:0; background:#eef2f7; color:#111827; font-family:"Noto Sans CJK TC","Microsoft JhengHei","Inter",Arial,sans-serif; }
+.slide { width:1280px; min-height:720px; box-sizing:border-box; padding:48px 68px 40px; margin:28px auto; background:#fff; border:1px solid #cbd5e1; box-shadow:0 18px 44px rgba(15,23,42,.13); position:relative; overflow:hidden; page-break-after:always; }
+.slide:before { content:""; position:absolute; left:0; top:0; bottom:0; width:12px; background:linear-gradient(180deg,#1d4ed8,#059669); }
+.slide-no { position:absolute; top:18px; right:30px; color:#94a3b8; font-weight:700; font-size:18px; }
+h1 { font-size:38px; line-height:1.15; margin:0 0 20px; color:#0f172a; }
+p,li { font-size:23px; line-height:1.42; }
+li { margin:6px 0; }
+strong { color:#1d4ed8; }
+blockquote { border-left:8px solid #059669; background:#ecfdf5; padding:14px 22px; color:#064e3b; margin:20px 0; font-size:24px; }
+pre { background:#0f172a; color:#e2e8f0; padding:16px 20px; border-radius:10px; font-size:18px; line-height:1.30; white-space:pre-wrap; }
+code { font-family:Consolas,"JetBrains Mono",monospace; }
+table { width:100%; border-collapse:collapse; font-size:17px; }
+th { background:#eff6ff; color:#1e3a8a; }
+th,td { border:1px solid #cbd5e1; padding:7px 9px; vertical-align:top; }
+img { display:block; max-width:100%; max-height:430px; object-fit:contain; margin:8px auto 0; }
+a { color:#1d4ed8; }
+@media print { body{background:white} .slide{margin:0; box-shadow:none; border:none;} }
+
+</style>
+</head>
+<body>
+<section class="slide"><div class="slide-no">01</div><h1>Clockless Federated Adaptation</h1>
+<p><strong>無全域時鐘下的非同步醫學影像聯邦學習</strong></p>
+<p>Group 4：Asynchronous Distributed ML Adaptation</p>
+<p>分散式系統期末 Proposal Deck</p></section><section class="slide"><div class="slide-no">02</div><h1>02 01 Motivation｜從醫院合作訓練開始</h1>
+<p>多家醫院想共同訓練醫學影像模型，但原始資料不能集中。</p>
+<ul>
+<li>醫院設備、網路、工作負載不同。</li>
+<li>有些 update 很快，有些 update 很晚。</li>
+<li>病人族群與影像分布不同。</li>
+</ul>
+<p><strong>問題：不等慢醫院會比較快，但晚到的 update 還可信嗎？</strong></p></section><section class="slide"><div class="slide-no">03</div><h1>03 01 Motivation｜分散式系統核心矛盾</h1>
+<pre><code class="language-text">Sync FL: 等所有 client -&gt; 最慢節點決定速度
+Async FL: 不等慢 client -&gt; 收到 stale / out-of-order update
+</code></pre>
+<p>本專案聚焦：</p>
+<blockquote>
+<p>throughput vs consistency / convergence correctness</p>
+</blockquote>
+<p>這是 distributed systems 的時間、順序與一致性問題，不只是分類模型問題。</p></section><section class="slide"><div class="slide-no">04</div><h1>04 02 Preliminary｜Sync vs Async FL</h1>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>System behavior</th>
+<th>Main risk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sync FedAvg</td>
+<td>round barrier，等待 clients</td>
+<td>straggler bottleneck</td>
+</tr>
+<tr>
+<td>Naive Async</td>
+<td>update 到就套用</td>
+<td>stale update instability</td>
+</tr>
+<tr>
+<td>Buffered Async</td>
+<td>收 B 個 updates 再聚合</td>
+<td>buffer 中仍可能有 conflict</td>
+</tr>
+</tbody>
+</table></section><section class="slide"><div class="slide-no">05</div><h1>05 02 Preliminary｜Logical Staleness</h1>
+<p>不假設 synchronized physical clock。</p>
+<pre><code class="language-text">server_version = current global model version
+client_start_version = version received by the client
+staleness = server_version - client_start_version
+</code></pre>
+<p>這是 Lamport logical time 在 FL simulator 裡的對應：用 logical version 取代 wall-clock ordering。</p></section><section class="slide"><div class="slide-no">06</div><h1>06 03 Problem Formulation｜公平比較</h1>
+<p>Async 以前表現差，可能只是 update budget 少。</p>
+<pre><code class="language-text">Sync update budget  = rounds × clients
+Async update budget = events
+Fair comparison     = events = rounds × clients
+</code></pre>
+<p>正式矩陣：</p>
+<pre><code class="language-text">9 datasets × 6 methods × 3 seeds = 162 official runs
+</code></pre></section><section class="slide"><div class="slide-no">07</div><h1>07 03 Problem Formulation｜評估指標</h1>
+<p>ML 指標：</p>
+<pre><code class="language-text">best_acc, final_acc, stability_drop = best_acc - final_acc
+</code></pre>
+<p>Distributed systems 指標：</p>
+<pre><code class="language-text">p95 staleness, simulated time, effective alpha,
+client contribution Gini, time-to-accuracy
+</code></pre>
+<p><strong>accuracy 是結果；staleness / delay / imbalance 解釋原因。</strong></p></section><section class="slide"><div class="slide-no">08</div><h1>08 03 Architecture｜Event-Driven Clockless Simulator</h1>
+<p><img alt="" src="assets/system_architecture.png" /></p></section><section class="slide"><div class="slide-no">09</div><h1>09 04 Methodology｜Baseline Map</h1>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Role</th>
+<th>What it tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sync</td>
+<td>upper reference</td>
+<td>no async staleness, but barrier</td>
+</tr>
+<tr>
+<td>Naive Async</td>
+<td>stateless async</td>
+<td>throughput without correction</td>
+</tr>
+<tr>
+<td>Staleness</td>
+<td>logical-age correction</td>
+<td>whether age alone is enough</td>
+</tr>
+<tr>
+<td>FedBuff</td>
+<td>buffered async baseline</td>
+<td>whether buffering stabilizes</td>
+</tr>
+<tr>
+<td>CAA-v1</td>
+<td>agreement-aware</td>
+<td>whether direction helps</td>
+</tr>
+<tr>
+<td>CAA-v2</td>
+<td>final method</td>
+<td>direction + trajectory + fairness</td>
+</tr>
+</tbody>
+</table></section><section class="slide"><div class="slide-no">10</div><h1>10 04 Methodology｜CAA-v2 不只是 FedBuff</h1>
+<p><img alt="" src="assets/proposal_component_stack.png" /></p></section><section class="slide"><div class="slide-no">11</div><h1>11 04 Methodology｜CAA-v2 Server Pipeline</h1>
+<p><img alt="" src="assets/proposal_method_flow.png" /></p></section><section class="slide"><div class="slide-no">12</div><h1>12 04 Methodology｜Server Decision Flow</h1>
+<p><img alt="" src="assets/proposal_method_decision.png" /></p></section><section class="slide"><div class="slide-no">13</div><h1>13 04 Methodology｜核心數學式</h1>
+<p>每個 client update：</p>
+<pre><code class="language-text">delta_i = client_model_i - model_at_client_start_i
+tau_i   = server_version - client_start_version_i
+</code></pre>
+<p>CAA-v2 權重：</p>
+<pre><code class="language-text">raw_weight_i = n_i × staleness_decay(tau_i)
+             × agreement(delta_i, ref) × fairness_i
+</code></pre>
+<p>Server update：</p>
+<pre><code class="language-text">w &lt;- w + alpha_buffer × weighted_average(delta_i)
+</code></pre></section><section class="slide"><div class="slide-no">14</div><h1>14 04 Methodology｜Reference Direction</h1>
+<pre><code class="language-text">buffer_ref = weighted_average(delta_i, n_i × age_i)
+server_ema = EMA(previous accepted server deltas)
+ref        = blend(buffer_ref, server_ema)
+</code></pre>
+<p>直覺：</p>
+<ul>
+<li>buffer_ref：這批 updates 的群體方向。</li>
+<li>server_ema：近期 global model 真的往哪裡走。</li>
+<li>stale 且反向的 update 不應被盲目放大。</li>
+</ul></section><section class="slide"><div class="slide-no">15</div><h1>15 04 Methodology｜Clockless Signals</h1>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Source</th>
+<th>Uses physical clock?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>staleness</td>
+<td>server/client logical version</td>
+<td>No</td>
+</tr>
+<tr>
+<td>agreement</td>
+<td>delta dot product</td>
+<td>No</td>
+</tr>
+<tr>
+<td>server trajectory</td>
+<td>accepted server deltas</td>
+<td>No</td>
+</tr>
+<tr>
+<td>fairness credit</td>
+<td>accepted contribution count</td>
+<td>No</td>
+</tr>
+<tr>
+<td>adaptive alpha</td>
+<td>mean staleness + agreement</td>
+<td>No</td>
+</tr>
+</tbody>
+</table></section><section class="slide"><div class="slide-no">16</div><h1>16 04 Methodology｜Novelty Boundary</h1>
+<p><img alt="" src="assets/proposal_novelty_position.png" /></p></section><section class="slide"><div class="slide-no">17</div><h1>17 05 Experiment Results｜Fairness Protocol</h1>
+<pre><code class="language-text">clients = 10
+local_epochs = 1
+batch_size = 128
+lr = 0.01, cosine scheduler
+seeds = 42, 43, 44
+async delay = same heterogeneous setting
+fair budget = async events = sync rounds × clients
+</code></pre>
+<p>正式比較不混用不同 backbone、delay、seed、local epochs 或 update budget。</p></section><section class="slide"><div class="slide-no">18</div><h1>18 05 Experiment Results｜Coverage</h1>
+<p><img alt="" src="assets/proposal_dataset_method_heatmap.png" /></p></section><section class="slide"><div class="slide-no">19</div><h1>19 05 Experiment Results｜Overall Dashboard</h1>
+<p><img alt="" src="assets/proposal_results_dashboard.png" /></p></section><section class="slide"><div class="slide-no">20</div><h1>20 05 Experiment Results｜CAA-v2 vs Sync</h1>
+<p><img alt="" src="assets/proposal_caa_v2_gap.png" /></p></section><section class="slide"><div class="slide-no">21</div><h1>21 05 Experiment Results｜Async-Sync Gap</h1>
+<p><img alt="" src="assets/proposal_async_sync_gap_errorbar.png" /></p></section><section class="slide"><div class="slide-no">22</div><h1>22 05 Experiment Results｜Stability Drop</h1>
+<p><img alt="" src="assets/proposal_stability_drop_errorbar.png" /></p></section><section class="slide"><div class="slide-no">23</div><h1>23 05 Experiment Results｜System Metrics</h1>
+<p><img alt="" src="assets/proposal_system_metrics.png" /></p></section><section class="slide"><div class="slide-no">24</div><h1>24 05 Experiment Results｜Non-IID Hospital Scenario</h1>
+<p><img alt="" src="assets/proposal_non_iid_async_sync_gap.png" /></p></section><section class="slide"><div class="slide-no">25</div><h1>25 05 Experiment Results｜Straggler Stress</h1>
+<p><img alt="" src="assets/proposal_straggler_staleness_distribution.png" /></p></section><section class="slide"><div class="slide-no">26</div><h1>26 05 Experiment Results｜Simulated Time</h1>
+<p><img alt="" src="assets/proposal_straggler_acc_vs_simulated_time.png" /></p></section><section class="slide"><div class="slide-no">27</div><h1>27 05 Experiment Results｜Ablation</h1>
+<p><img alt="" src="assets/proposal_caa_v2_ablation_best_acc.png" /></p></section><section class="slide"><div class="slide-no">28</div><h1>28 05 Experiment Results｜Final Interpretation</h1>
+<p>正式 fair matrix：</p>
+<pre><code class="language-text">CAA-v2 best  = 0.7169
+CAA-v2 final = 0.7140
+Sync final   = 0.7121
+Naive final  = 0.7096
+</code></pre>
+<p>結論：CAA-v2 不是 universal winner，但它比 Naive 穩、比 staleness-only 不保守，並且在多數資料集接近或超過 Sync。</p></section><section class="slide"><div class="slide-no">29</div><h1>29 06 Challenges｜總覽</h1>
+<p><img alt="" src="assets/proposal_challenge_map.png" /></p></section><section class="slide"><div class="slide-no">30</div><h1>30 06 Challenges｜No Global Clock, Stale, Conflict</h1>
+<p>三個問題會同時發生：</p>
+<pre><code class="language-text">No global clock -&gt; cannot totally order distributed events
+Stale update    -&gt; trained from old global model
+Conflict update -&gt; non-IID direction differs from others
+</code></pre>
+<p>CAA-v2 的設計：logical staleness + direction agreement + server trajectory。</p></section><section class="slide"><div class="slide-no">31</div><h1>31 06 Challenges｜Fast Clients 與 Privacy Tension</h1>
+<p>Fast-client domination：</p>
+<pre><code class="language-text">快醫院 arrival rate 高 -&gt; 可能長期主導 global model
+</code></pre>
+<p>Privacy tension：</p>
+<pre><code class="language-text">CAA-v2 需要 delta direction / norm
+secure aggregation 相容性仍需未來設計
+</code></pre>
+<p>所以目前主張是 system simulator / design extension，不宣稱完整 privacy solution。</p></section><section class="slide"><div class="slide-no">32</div><h1>32 07 Conclusion｜貢獻總結</h1>
+<ol>
+<li>用 logical version 建立 no-global-clock async FL simulator。</li>
+<li>補上 fair update-budget protocol。</li>
+<li>提出 CAA-v2：agreement + server trajectory + fairness credit。</li>
+<li>用 9 datasets × 6 methods × 3 seeds 驗證。</li>
+<li>用 staleness、simulated time、client Gini 補足 distributed systems 分析。</li>
+</ol></section><section class="slide"><div class="slide-no">33</div><h1>33 07 Conclusion｜Final Claim</h1>
+<blockquote>
+<p>Under a fair update budget, CAA-v2 makes clockless asynchronous FL approach Sync FedAvg across diverse MedMNIST datasets, while reducing the instability of Naive Async and avoiding the over-conservatism of staleness-only aggregation.</p>
+</blockquote>
+<p>中文：</p>
+<blockquote>
+<p>CAA-v2 讓無全域時鐘的非同步 FL 接近 Sync FedAvg，同時比 Naive Async 穩、比 staleness-only 不保守。</p>
+</blockquote></section><section class="slide"><div class="slide-no">34</div><h1>34 07 Future Work</h1>
+<ul>
+<li>對比 FedStaleWeight、SEAFL、FedPSA、FedCompass。</li>
+<li>non-IID / straggler stress 增加 multi-seed。</li>
+<li>加入 real network / hospital-like traces。</li>
+<li>補 balanced accuracy、macro-F1、minority recall、AUROC。</li>
+<li>設計 secure-aggregation-compatible agreement statistics。</li>
+<li>加入簡化 convergence / stability analysis。</li>
+</ul></section><section class="slide"><div class="slide-no">35</div><h1>35 References</h1>
+<ul>
+<li>Lamport, <em>Time, Clocks, and the Ordering of Events in a Distributed System</em>, CACM 1978.</li>
+<li>McMahan et al., <em>Communication-Efficient Learning of Deep Networks from Decentralized Data</em>, AISTATS 2017.</li>
+<li>Xie et al., <em>Asynchronous Federated Optimization</em>, 2019.</li>
+<li>Nguyen et al., <em>Federated Learning with Buffered Asynchronous Aggregation</em>, 2021.</li>
+<li>Ma et al., <em>FedStaleWeight</em>, 2024.</li>
+<li>Yang et al., <em>MedMNIST v2</em>, Scientific Data 2023.</li>
+</ul></section>
+</body>
+</html>
