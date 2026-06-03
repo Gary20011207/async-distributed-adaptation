@@ -19,12 +19,13 @@ POLL_SECONDS="${POLL_SECONDS:-30}"
 
 COMMON_ARGS=(
   --clients 10
-  --batch-size 128
-  --lr 0.01
+  --batch-size 4          
+  --lr 0.0001 
   --lr-scheduler cosine
-  --min-lr 0.0001
+  --min-lr 0.00001
   --local-epochs 1
-  --augment
+  --max-train-samples 10000
+  --max-test-samples 2000
   --device cuda
   --save-best
   --delay-mode heterogeneous
@@ -79,12 +80,7 @@ dataset_extra_args() {
 }
 
 rounds_for_dataset() {
-  local dataset="$1"
-  if [[ "$dataset" == "pathmnist" ]]; then
-    echo 100
-  else
-    echo 30
-  fi
+  echo 10
 }
 
 enqueue_run() {
@@ -107,41 +103,22 @@ enqueue_run() {
 
 build_queue() {
   local methods=(sync_fedavg naive_async staleness_async agreement_fedbuff_async caa_fedbuff_v2)
-  local dataset
+  local dataset="mmlu"
+  local model="qwen"
   local method
+  local seed
 
-  # Required extension: additional MedMNIST datasets with fair single-seed coverage.
-  for dataset in breastmnist tissuemnist; do
+  # 1. 確保基本涵蓋度
+  for seed in 42 43 44; do
     for method in "${methods[@]}"; do
-      enqueue_run "$dataset" "$method" 42 resnet18 "coverage_${dataset}_${method}"
+      enqueue_run "$dataset" "$method" "$seed" "$model" "report_coverage_${dataset}_${method}_s${seed}"
     done
   done
 
-  # Required backbone sanity check: the algorithm should not be ResNet-only.
-  for dataset in pneumoniamnist bloodmnist organamnist; do
-    for method in sync_fedavg naive_async staleness_async caa_fedbuff_v2; do
-      enqueue_run "$dataset" "$method" 42 small_cnn "backbone_smallcnn_${dataset}_${method}"
-    done
-  done
-
-  # Mechanism ablation: keep the CAA-v2 rule simple and explainable.
-  enqueue_run pathmnist caa_fedbuff_v2 42 resnet18 "ablation_path_full_caa_v2" "server_delta_momentum=0.8,history_agreement_blend=0.25,client_fairness_power=0.5"
-  enqueue_run pathmnist caa_fedbuff_v2 42 resnet18 "ablation_path_no_ema" "server_delta_momentum=0.8,history_agreement_blend=0.0,client_fairness_power=0.5"
-  enqueue_run pathmnist caa_fedbuff_v2 42 resnet18 "ablation_path_no_fairness" "server_delta_momentum=0.8,history_agreement_blend=0.25,client_fairness_power=0.0"
-  enqueue_run pathmnist agreement_fedbuff_async 42 resnet18 "ablation_path_old_caa"
-
-  enqueue_run bloodmnist caa_fedbuff_v2 42 resnet18 "ablation_blood_full_caa_v2" "server_delta_momentum=0.8,history_agreement_blend=0.25,client_fairness_power=0.5"
-  enqueue_run bloodmnist caa_fedbuff_v2 42 resnet18 "ablation_blood_no_ema" "server_delta_momentum=0.8,history_agreement_blend=0.0,client_fairness_power=0.5"
-  enqueue_run bloodmnist caa_fedbuff_v2 42 resnet18 "ablation_blood_no_fairness" "server_delta_momentum=0.8,history_agreement_blend=0.25,client_fairness_power=0.0"
-  enqueue_run bloodmnist agreement_fedbuff_async 42 resnet18 "ablation_blood_old_caa"
-
-  # Optional coverage if the required queue finishes early.
-  for method in sync_fedavg naive_async staleness_async caa_fedbuff_v2; do
-    enqueue_run organcmnist "$method" 42 resnet18 "optional_organc_${method}"
-  done
-  for method in sync_fedavg naive_async staleness_async caa_fedbuff_v2; do
-    enqueue_run breastmnist "$method" 42 mobilenet_v3_small "optional_mobilenet_breast_${method}"
-  done
+  # 2. 核心大模型演算法 CAA-v2 機制消融對照
+  enqueue_run "mmlu" caa_fedbuff_v2 42 qwen "report_ablation_full_caa_v2" "server_delta_momentum=0.8,history_agreement_blend=0.25,client_fairness_power=0.5"
+  enqueue_run "mmlu" caa_fedbuff_v2 42 qwen "report_ablation_no_ema" "server_delta_momentum=0.8,history_agreement_blend=0.0,client_fairness_power=0.5"
+  enqueue_run "mmlu" caa_fedbuff_v2 42 qwen "report_ablation_no_fairness" "server_delta_momentum=0.8,history_agreement_blend=0.25,client_fairness_power=0.0"
 }
 
 active_training_commands() {
@@ -220,7 +197,7 @@ for path in glob.glob("results/*_summary.json"):
         continue
     if int(config.get("seed", 42)) != seed:
         continue
-    if str(config.get("model", "resnet18")) != model:
+    if str(config.get("model", "qwen")) != model:
         continue
     if abs(update_budget(summary, config) - budget) > 1e-6:
         continue
@@ -246,10 +223,9 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-required_primary = ["pathmnist", "pneumoniamnist", "bloodmnist", "organamnist"]
+required_primary = ["mmlu"]
 required_methods = ["sync_fedavg", "naive_async", "staleness_async", "agreement_fedbuff_async", "caa_fedbuff_v2"]
 required_seeds = [42, 43, 44]
-new_datasets = ["breastmnist", "tissuemnist"]
 
 
 def dataset_of(path: Path, summary: dict) -> str:
@@ -286,39 +262,26 @@ for path in Path("results").glob("*_summary.json"):
     dataset = dataset_of(path, summary)
     method = summary.get("method", "")
     seed = int(config.get("seed", 42))
-    model = str(config.get("model", "resnet18"))
+    model = str(config.get("model", "qwen"))
     acc = float(summary.get("best_test_acc", -1.0))
     final = float(summary.get("final_test_acc", -1.0))
     rows.append((dataset, method, seed, model, acc, final))
-    if dataset in required_primary and method in required_methods and seed in required_seeds and model == "resnet18":
-        expected = 1000 if dataset == "pathmnist" else 300
-        if abs(budget(summary, config) - expected) < 1e-6:
+    if dataset in required_primary and method in required_methods and seed in required_seeds and model == "qwen":
+        if abs(budget(summary, config) - 100) < 1e-6:
             have.add((dataset, method, seed))
-    if dataset in new_datasets and method in required_methods and seed == 42 and model == "resnet18":
-        new_coverage[dataset].add(method)
-    if dataset in {"pneumoniamnist", "bloodmnist", "organamnist"} and model == "small_cnn":
-        small_cnn.add((dataset, method))
     if method in {"agreement_fedbuff_async", "caa_fedbuff_v2"}:
         if best_caa_family is None or acc > best_caa_family[0]:
             best_caa_family = (acc, dataset, method, seed, final)
     latest = (dataset, method, seed, model, acc, final)
 
 complete_primary = 0
-missing_primary = []
 for dataset in required_primary:
     for seed in required_seeds:
         if all((dataset, method, seed) in have for method in required_methods):
             complete_primary += 1
-        else:
-            missing_primary.append(f"{dataset}:seed{seed}")
 
 print(f"summary_count={len(rows)}")
-print(f"primary_seed_sets={complete_primary}/12 missing={len(set(missing_primary))}")
-print(
-    "new_dataset_coverage="
-    + ",".join(f"{dataset}:{len(new_coverage[dataset])}/5" for dataset in new_datasets)
-)
-print(f"small_cnn_method_rows={len(small_cnn)}/12")
+print(f"primary_seed_sets={complete_primary}/3") # 🎯 修正：總共 3 組多種子矩陣
 if best_caa_family:
     acc, dataset, method, seed, final = best_caa_family
     print(f"best_caa_family={acc:.4f} dataset={dataset} method={method} seed={seed} final={final:.4f}")
@@ -330,10 +293,8 @@ PY
 
 generate_report_pack() {
   log_action "regenerate report pack"
-  PYTHONPATH=src python -m fed_pathmnist.plot_results --csv results/*.csv --outdir figures >> "$ACTION_LOG" 2>&1 || true
-  python scripts/plot_report_summary.py --result-dir results --outdir figures/report >> "$ACTION_LOG" 2>&1 || true
-  python scripts/plot_seeded_summary.py --result-dir results --outdir figures/report >> "$ACTION_LOG" 2>&1 || true
-  python scripts/plot_classification_results.py --result-dir results --checkpoint-dir checkpoints --outdir figures/classification --datasets pathmnist pneumoniamnist bloodmnist organamnist breastmnist tissuemnist >> "$ACTION_LOG" 2>&1 || true
+  python scripts/plot_report_summary.py --result-dir results --outdir figures/report --model qwen >> "$ACTION_LOG" 2>&1 || true
+  python scripts/plot_seeded_summary.py --result-dir results --outdir figures/report --model qwen >> "$ACTION_LOG" 2>&1 || true
   python scripts/summarize_results.py --result-dir results --out ../REPORT_NOTES.md >> "$ACTION_LOG" 2>&1 || true
 }
 

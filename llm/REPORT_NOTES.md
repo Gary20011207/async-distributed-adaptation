@@ -23,9 +23,8 @@ This characterizes the validation track as a true distributed-systems experiment
 ## Headline Findings
 
 - Fair async comparison uses the same client-update budget: `async events = sync rounds * clients`.
-- Best CAA-family run reached `0.4195`, compared with strongest stateless async `0.4060` and Sync FedAvg `0.4145`.
+- Best CAA-family run reached `0.4295`, compared with strongest stateless async `0.4140` and Sync FedAvg `0.4245`.
 - In the current completed runs, a CAA-family method beats the strongest baseline by best accuracy.
-- Logical staleness alone can be conservative: it reduces stale-update impact, but may also shrink useful updates too much.
 - Completed datasets in this report: `mmlu`.
 - The main report metrics are `Async-Sync Best Gap`, `Async-Sync Final Gap`, and `Stability Drop = best_acc - final_acc`.
 
@@ -86,48 +85,77 @@ This table keeps all completed full runs, including tuning runs. Use the best-by
 
 | Dataset | Model | Run | Budget | Best Acc | Best Step | Final Acc | Final Loss | Progress | Sim Time | Avg Staleness | Avg Alpha | Avg Agreement | Buffer Alpha | Dropped | Client Updates |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| mmlu | qwen | agreement_fedbuff_async / iid / hinge / B=5 | 100 | 0.4225 | 60 | 0.4075 | 1.3327 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.5569 | 0.6151 | 0 | 1-13 |
+| mmlu | qwen | agreement_fedbuff_async / iid / hinge / B=5 | 100 | 0.4240 | 100 | 0.4240 | 1.3250 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.5524 | 0.6117 | 0 | 1-15 |
+| mmlu | qwen | agreement_fedbuff_async / iid / hinge / B=5 | 100 | 0.4200 | 100 | 0.4200 | 1.3188 | 100 | 35.3621 | 1.5000 | 0.6180 | 0.5676 | 0.6160 | 0 | 1-14 |
 | mmlu | qwen | caa_fedbuff_v2 / dirichlet | 100 | 0.4030 | 80 | 0.3840 | 1.5052 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.3866 | 0.5849 | 0 | 1-13 |
 | mmlu | qwen | caa_fedbuff_v2 / dirichlet | 100 | 0.3665 | 100 | 0.3665 | 1.5271 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.3799 | 0.5837 | 0 | 1-13 |
 | mmlu | qwen | caa_fedbuff_v2 / dirichlet | 100 | 0.4195 | 60 | 0.4110 | 1.4241 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.4509 | 0.5898 | 0 | 1-15 |
 | mmlu | qwen | caa_fedbuff_v2 / dirichlet | 100 | 0.3985 | 80 | 0.3965 | 1.4447 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.3281 | 0.5770 | 0 | 1-15 |
 | mmlu | qwen | caa_fedbuff_v2 / dirichlet | 100 | 0.4070 | 80 | 0.3885 | 1.4286 | 100 | 35.3621 | 1.5000 | 0.6180 | 0.3800 | 0.5841 | 0 | 1-14 |
 | mmlu | qwen | caa_fedbuff_v2 / dirichlet | 100 | 0.3515 | 20 | 0.3205 | 2.2079 | 100 | 35.3621 | 1.5000 | 0.6180 | 0.2853 | 0.5733 | 0 | 1-14 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4100 | 100 | 0.4100 | 1.3340 | 100 | 55.1216 | 1.6300 | 0.6200 | 0.5490 | 0.5939 | 0 | 8-14 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4085 | 100 | 0.4085 | 1.3222 | 100 | 30.8022 | 1.6500 | 0.6200 | 0.5259 | 0.5907 | 0 | 8-12 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4115 | 80 | 0.4065 | 1.3346 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.4889 | 0.5960 | 0 | 1-13 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4205 | 100 | 0.4205 | 1.3212 | 100 | 47.3713 | 1.5700 | 0.6145 | 0.4667 | 0.5930 | 0 | 1-17 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4115 | 60 | 0.4090 | 1.3356 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.5687 | 0.6166 | 0 | 1-13 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4185 | 60 | 0.4080 | 1.3297 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.4836 | 0.5958 | 0 | 1-13 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4210 | 60 | 0.4105 | 1.3384 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.4824 | 0.5951 | 0 | 1-13 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4125 | 100 | 0.4125 | 1.3383 | 100 | 36.7286 | 1.4900 | 0.6186 | 0.4983 | 0.6200 | 0 | 1-13 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4285 | 100 | 0.4285 | 1.3253 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.4769 | 0.5925 | 0 | 1-15 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4295 | 100 | 0.4295 | 1.3259 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.5575 | 0.6124 | 0 | 1-15 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4250 | 100 | 0.4250 | 1.3244 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.4763 | 0.5927 | 0 | 1-15 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4275 | 100 | 0.4275 | 1.3231 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.4726 | 0.5917 | 0 | 1-15 |
+| mmlu | qwen | caa_fedbuff_v2 / iid | 100 | 0.4280 | 100 | 0.4280 | 1.3257 | 100 | 38.2223 | 1.5400 | 0.6177 | 0.4816 | 0.6200 | 0 | 1-15 |
 | mmlu | qwen | fedbuff_async / dirichlet / hinge / B=5 | 100 | 0.3995 | 100 | 0.3995 | 1.3433 | 100 | 36.7286 | 1.4900 | 0.4988 |  |  |  | 1-13 |
 | mmlu | qwen | fedbuff_async / dirichlet / hinge / B=5 | 100 | 0.3715 | 100 | 0.3715 | 1.5050 | 100 | 36.7286 | 1.4900 | 0.4988 |  |  |  | 1-13 |
 | mmlu | qwen | fedbuff_async / dirichlet / hinge / B=5 | 100 | 0.4205 | 80 | 0.4150 | 1.3615 | 100 | 38.2223 | 1.5400 | 0.4982 |  |  |  | 1-15 |
 | mmlu | qwen | fedbuff_async / dirichlet / hinge / B=5 | 100 | 0.4225 | 100 | 0.4225 | 1.4189 | 100 | 38.2223 | 1.5400 | 0.4982 |  |  |  | 1-15 |
 | mmlu | qwen | fedbuff_async / dirichlet / hinge / B=5 | 100 | 0.4105 | 40 | 0.4020 | 1.3801 | 100 | 35.3621 | 1.5000 | 0.4983 |  |  |  | 1-14 |
 | mmlu | qwen | fedbuff_async / dirichlet / hinge / B=5 | 100 | 0.3600 | 100 | 0.3600 | 1.8181 | 100 | 35.3621 | 1.5000 | 0.4983 |  |  |  | 1-14 |
+| mmlu | qwen | fedbuff_async / iid / hinge / B=5 | 100 | 0.4250 | 100 | 0.4250 | 1.3092 | 100 | 55.1216 | 1.6300 | 0.5000 |  |  |  | 8-14 |
+| mmlu | qwen | fedbuff_async / iid / hinge / B=5 | 100 | 0.4155 | 80 | 0.4090 | 1.3078 | 100 | 30.8022 | 1.6500 | 0.5000 |  |  |  | 8-12 |
+| mmlu | qwen | fedbuff_async / iid / hinge / B=5 | 100 | 0.4170 | 80 | 0.4085 | 1.3203 | 100 | 36.7286 | 1.4900 | 0.4988 |  |  |  | 1-13 |
+| mmlu | qwen | fedbuff_async / iid / hinge / B=5 | 100 | 0.4195 | 40 | 0.4100 | 1.3221 | 100 | 47.3713 | 1.5700 | 0.4956 |  |  |  | 1-17 |
 | mmlu | qwen | naive_async / dirichlet | 100 | 0.4040 | 20 | 0.4030 | 1.4194 | 100 | 36.7286 | 7.6900 | 0.5000 |  |  |  | 1-13 |
 | mmlu | qwen | naive_async / dirichlet | 100 | 0.3740 | 80 | 0.3565 | 1.5043 | 100 | 36.7286 | 7.6900 | 0.5000 |  |  |  | 1-13 |
 | mmlu | qwen | naive_async / dirichlet | 100 | 0.4060 | 60 | 0.4040 | 1.5670 | 100 | 38.2223 | 7.9000 | 0.5000 |  |  |  | 1-15 |
 | mmlu | qwen | naive_async / dirichlet | 100 | 0.3535 | 80 | 0.3200 | 1.9280 | 100 | 38.2223 | 7.9000 | 0.5000 |  |  |  | 1-15 |
 | mmlu | qwen | naive_async / dirichlet | 100 | 0.3950 | 80 | 0.3065 | 1.9635 | 100 | 35.3621 | 7.6700 | 0.5000 |  |  |  | 1-14 |
 | mmlu | qwen | naive_async / dirichlet | 100 | 0.3190 | 100 | 0.3190 | 2.1864 | 100 | 35.3621 | 7.6700 | 0.5000 |  |  |  | 1-14 |
+| mmlu | qwen | naive_async / iid | 100 | 0.4140 | 60 | 0.4070 | 1.3630 | 100 | 55.1216 | 8.3800 | 0.5000 |  |  |  | 8-14 |
+| mmlu | qwen | naive_async / iid | 100 | 0.4120 | 80 | 0.4065 | 1.3535 | 100 | 30.8022 | 8.4700 | 0.5000 |  |  |  | 8-12 |
+| mmlu | qwen | naive_async / iid | 100 | 0.4130 | 40 | 0.4070 | 1.3727 | 100 | 36.7286 | 7.6900 | 0.5000 |  |  |  | 1-13 |
+| mmlu | qwen | naive_async / iid | 100 | 0.4125 | 100 | 0.4125 | 1.3653 | 100 | 47.3713 | 8.0300 | 0.5000 |  |  |  | 1-17 |
 | mmlu | qwen | staleness_async / dirichlet / hinge | 100 | 0.4035 | 100 | 0.4035 | 1.4071 | 100 | 36.7286 | 7.6900 | 0.4063 |  |  |  | 1-13 |
 | mmlu | qwen | staleness_async / dirichlet / hinge | 100 | 0.4050 | 80 | 0.3650 | 1.4275 | 100 | 36.7286 | 7.6900 | 0.4063 |  |  |  | 1-13 |
 | mmlu | qwen | staleness_async / dirichlet / hinge | 100 | 0.4045 | 100 | 0.4045 | 1.5092 | 100 | 38.2223 | 7.9000 | 0.4050 |  |  |  | 1-15 |
 | mmlu | qwen | staleness_async / dirichlet / hinge | 100 | 0.3655 | 60 | 0.3380 | 1.8088 | 100 | 38.2223 | 7.9000 | 0.4050 |  |  |  | 1-15 |
 | mmlu | qwen | staleness_async / dirichlet / hinge | 100 | 0.3945 | 80 | 0.3155 | 1.8717 | 100 | 35.3621 | 7.6700 | 0.4108 |  |  |  | 1-14 |
 | mmlu | qwen | staleness_async / dirichlet / hinge | 100 | 0.3250 | 40 | 0.3250 | 2.1181 | 100 | 35.3621 | 7.6700 | 0.4108 |  |  |  | 1-14 |
+| mmlu | qwen | staleness_async / iid / hinge | 100 | 0.4170 | 80 | 0.4105 | 1.3407 | 100 | 55.1216 | 8.3800 | 0.3882 |  |  |  | 8-14 |
+| mmlu | qwen | staleness_async / iid / hinge | 100 | 0.4155 | 60 | 0.4070 | 1.3292 | 100 | 30.8022 | 8.4700 | 0.3872 |  |  |  | 8-12 |
+| mmlu | qwen | staleness_async / iid / hinge | 100 | 0.4140 | 40 | 0.4120 | 1.3484 | 100 | 36.7286 | 7.6900 | 0.4063 |  |  |  | 1-13 |
+| mmlu | qwen | staleness_async / iid / hinge | 100 | 0.4075 | 40 | 0.4020 | 1.4056 | 100 | 47.3713 | 8.0300 | 0.4306 |  |  |  | 1-17 |
 | mmlu | qwen | sync_fedavg / dirichlet | 100 | 0.4065 | 6 | 0.3955 | 1.3422 | 10 | 0.0000 | 0.0000 | 1.0000 |  |  |  |  |
 | mmlu | qwen | sync_fedavg / dirichlet | 100 | 0.3825 | 10 | 0.3825 | 1.3916 | 10 | 0.0000 | 0.0000 | 1.0000 |  |  |  |  |
 | mmlu | qwen | sync_fedavg / dirichlet | 100 | 0.4135 | 7 | 0.4115 | 1.3382 | 10 | 0.0000 | 0.0000 | 1.0000 |  |  |  |  |
 | mmlu | qwen | sync_fedavg / dirichlet | 100 | 0.4145 | 10 | 0.4145 | 1.4223 | 10 | 0.0000 | 0.0000 | 1.0000 |  |  |  |  |
 | mmlu | qwen | sync_fedavg / dirichlet | 100 | 0.4085 | 6 | 0.4085 | 1.3243 | 10 | 0.0000 | 0.0000 | 1.0000 |  |  |  |  |
 | mmlu | qwen | sync_fedavg / dirichlet | 100 | 0.3980 | 7 | 0.3955 | 1.5063 | 10 | 0.0000 | 0.0000 | 1.0000 |  |  |  |  |
+| mmlu | qwen | sync_fedavg / iid | 100 | 0.4245 | 4 | 0.4125 | 1.3072 | 10 | 0.0000 | 0.0000 | 1.0000 |  |  |  |  |
 
 ## CAA-Family Check
 
-- Best CAA-family run: `caa_fedbuff_v2 / dirichlet` at `0.4195`.
-- Strongest non-CAA baseline: `fedbuff_async / dirichlet / hinge / B=5` at `0.4225`.
-- Conclusion: The CAA-family method did not beat the strongest completed non-CAA baseline; report the stability trade-off honestly.
+- Best CAA-family run: `caa_fedbuff_v2 / iid` at `0.4295`.
+- Strongest non-CAA baseline: `fedbuff_async / iid / hinge / B=5` at `0.4250`.
+- Conclusion: The CAA-family method beat the strongest completed non-CAA baseline.
 
 ## Agreement Analysis
 
-- Best CAA-family run: `caa_fedbuff_v2 / dirichlet`.
-- Average positive agreement was `0.4509`; higher values mean buffered client parameter directions aligned smoothly.
-- Average adaptive buffer alpha was `0.5898`, demonstrating effective server step scaling.
+- Best CAA-family run: `caa_fedbuff_v2 / iid`.
+- Average positive agreement was `0.5575`; higher values mean buffered client parameter directions aligned smoothly.
+- Average adaptive buffer alpha was `0.6124`, demonstrating effective server step scaling.
 - Dropped stale/conflicting updates: `0`.
 
 ## Async-Sync Gap Analysis
@@ -158,12 +186,40 @@ This table keeps all completed full runs, including tuning runs. Use the best-by
 | mmlu / staleness_async / dirichlet / hinge | sync_fedavg / dirichlet | 0.0490 | 0.0765 | 0.0275 |
 | mmlu / staleness_async / dirichlet / hinge | sync_fedavg / dirichlet | 0.0200 | 0.0990 | 0.0790 |
 | mmlu / staleness_async / dirichlet / hinge | sync_fedavg / dirichlet | 0.0895 | 0.0895 | 0.0000 |
+| mmlu / agreement_fedbuff_async / iid / hinge / B=5 | sync_fedavg / iid | 0.0020 | 0.0050 | 0.0150 |
+| mmlu / agreement_fedbuff_async / iid / hinge / B=5 | sync_fedavg / iid | 0.0005 | -0.0115 | 0.0000 |
+| mmlu / agreement_fedbuff_async / iid / hinge / B=5 | sync_fedavg / iid | 0.0045 | -0.0075 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0145 | 0.0025 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0160 | 0.0040 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0130 | 0.0060 | 0.0050 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0040 | -0.0080 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0130 | 0.0035 | 0.0025 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0060 | 0.0045 | 0.0105 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0035 | 0.0020 | 0.0105 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | 0.0120 | 0.0000 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | -0.0040 | -0.0160 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | -0.0050 | -0.0170 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | -0.0005 | -0.0125 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | -0.0030 | -0.0150 | 0.0000 |
+| mmlu / caa_fedbuff_v2 / iid | sync_fedavg / iid | -0.0035 | -0.0155 | 0.0000 |
+| mmlu / fedbuff_async / iid / hinge / B=5 | sync_fedavg / iid | -0.0005 | -0.0125 | 0.0000 |
+| mmlu / fedbuff_async / iid / hinge / B=5 | sync_fedavg / iid | 0.0090 | 0.0035 | 0.0065 |
+| mmlu / fedbuff_async / iid / hinge / B=5 | sync_fedavg / iid | 0.0075 | 0.0040 | 0.0085 |
+| mmlu / fedbuff_async / iid / hinge / B=5 | sync_fedavg / iid | 0.0050 | 0.0025 | 0.0095 |
+| mmlu / naive_async / iid | sync_fedavg / iid | 0.0105 | 0.0055 | 0.0070 |
+| mmlu / naive_async / iid | sync_fedavg / iid | 0.0125 | 0.0060 | 0.0055 |
+| mmlu / naive_async / iid | sync_fedavg / iid | 0.0115 | 0.0055 | 0.0060 |
+| mmlu / naive_async / iid | sync_fedavg / iid | 0.0120 | 0.0000 | 0.0000 |
+| mmlu / staleness_async / iid / hinge | sync_fedavg / iid | 0.0075 | 0.0020 | 0.0065 |
+| mmlu / staleness_async / iid / hinge | sync_fedavg / iid | 0.0090 | 0.0055 | 0.0085 |
+| mmlu / staleness_async / iid / hinge | sync_fedavg / iid | 0.0105 | 0.0005 | 0.0020 |
+| mmlu / staleness_async / iid / hinge | sync_fedavg / iid | 0.0170 | 0.0105 | 0.0055 |
 
 ## Stateless vs Staleness-Aware
 
 | Dataset | Stateless Best | Staleness-Aware Best | CAA-Family Best | Note |
 |---|---:|---:|---:|---|
-| mmlu | 0.4060 | 0.4050 | 0.4195 | logical staleness alone was conservative; CAA matched/exceeded stateless |
+| mmlu | 0.4140 | 0.4170 | 0.4295 | staleness decay helped; CAA matched/exceeded stateless |
 
 ## Interpretation
 

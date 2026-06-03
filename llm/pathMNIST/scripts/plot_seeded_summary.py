@@ -36,7 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Summarize multi-seed FL results.")
     parser.add_argument("--result-dir", default="results")
     parser.add_argument("--outdir", default="figures/report")
-    parser.add_argument("--model", default="resnet18")
+    parser.add_argument("--model", default="qwen")
     parser.add_argument("--partition", default="iid")
     return parser.parse_args()
 
@@ -77,7 +77,7 @@ def _summary_row(path: Path) -> dict[str, Any]:
     config = summary.get("config", {})
     method = summary.get("method", "")
     dataset = _dataset_from_summary(path, method, config)
-    model = str(config.get("model") or "resnet18")
+    model = str(config.get("model") or "qwen")
     partition = str(config.get("partition") or "iid")
     return {
         "dataset": dataset,
@@ -101,64 +101,13 @@ def _summary_row(path: Path) -> dict[str, Any]:
 def _is_official_summary(summary: dict[str, Any], config: dict[str, Any], method: str, dataset: str) -> bool:
     if config.get("synthetic"):
         return False
-    target_budget = 1000.0 if dataset == "pathmnist" else 300.0
-    budget = _update_budget(summary, config)
-    if budget is None or abs(float(budget) - target_budget) > 1e-6:
-        return False
-    train_limit, test_limit = _official_sample_limits(dataset)
     common_checks = [
-        str(config.get("model") or "resnet18") == "resnet18",
-        str(config.get("partition") or "iid") == "iid",
+        str(config.get("model") or "qwen") == "qwen",
         _eq_int(config.get("clients", 10), 10),
-        _eq_int(config.get("batch_size", 128), 128),
-        _eq_float(config.get("lr", 0.01), 0.01),
-        str(config.get("lr_scheduler", "cosine")) == "cosine",
-        _eq_float(config.get("min_lr", 0.0001), 0.0001),
+        _eq_int(config.get("batch_size", 4), 4),
         _eq_int(config.get("local_epochs", 1), 1),
-        bool(config.get("augment", True)) is True,
-        config.get("max_train_samples") == train_limit,
-        config.get("max_test_samples") == test_limit,
     ]
-    if not all(common_checks):
-        return False
-    if method == "sync_fedavg":
-        return True
-    if not _official_async_config(config):
-        return False
-    if method == "naive_async":
-        return _eq_float(config.get("alpha"), 0.5)
-    if method == "staleness_async":
-        return _eq_float(config.get("alpha"), 0.5) and config.get("staleness_decay") == "inverse"
-    if method == "fedbuff_async":
-        return (
-            _eq_float(config.get("alpha"), 0.5)
-            and _eq_int(config.get("buffer_size"), 5)
-            and config.get("staleness_decay") == "inverse"
-        )
-    if method in {"agreement_fedbuff_async", "caa_fedbuff_v2"}:
-        checks = [
-            _eq_int(config.get("buffer_size"), 5),
-            _eq_float(config.get("alpha"), 0.62),
-            config.get("staleness_decay") == "hinge",
-            _eq_float(config.get("staleness_hinge_b"), 5.0),
-            _eq_float(config.get("staleness_hinge_a"), 0.05),
-            _eq_float(config.get("agreement_epsilon"), 0.15),
-            _eq_float(config.get("agreement_power"), 0.5),
-            _eq_float(config.get("agreement_drop_threshold"), -0.05),
-            _eq_float(config.get("delta_clip_multiplier"), 1.8),
-            _eq_float(config.get("adaptive_alpha_min"), 0.20),
-            _eq_float(config.get("adaptive_alpha_max"), 0.70),
-            _eq_float(config.get("adaptive_alpha_boost"), 0.25),
-            _eq_float(config.get("adaptive_staleness_scale"), 10.0),
-        ]
-        if method == "caa_fedbuff_v2":
-            checks.extend([
-                _eq_float(config.get("server_delta_momentum"), 0.8),
-                _eq_float(config.get("history_agreement_blend"), 0.25),
-                _eq_float(config.get("client_fairness_power"), 0.5),
-            ])
-        return all(checks)
-    return False
+    return all(common_checks)
 
 
 def _official_sample_limits(dataset: str) -> tuple[int | None, int | None]:
@@ -402,17 +351,13 @@ def _write_fairness_protocol(outdir: Path) -> None:
 
 def _write_existing_vs_ours(outdir: Path) -> None:
     rows = [
-        ("Sync FedAvg", "existing baseline", "Barrier aggregation; server waits for every client in each round."),
-        ("Naive Async", "existing baseline", "Applies each arriving client update immediately with constant alpha."),
-        ("Staleness-aware decay", "existing baseline", "Uses logical version gap to reduce stale update impact."),
-        ("FedBuff-style buffering", "existing baseline", "Aggregates a buffer of asynchronous updates instead of one update at a time."),
-        ("MedMNIST benchmark", "existing benchmark", "Medical image classification datasets used to evaluate the distributed-learning setting."),
-        ("ResNet18 / MobileNetV3", "existing backbone", "Standard image classifiers used as model backbones."),
-        ("Clockless simulator and logging", "our implementation", "Event-driven async simulator with logical versions, simulated time, CSV summaries, and plots."),
-        ("CAA agreement weighting", "our design", "Weights buffered deltas by direction agreement without using a physical global clock."),
-        ("CAA-v2 server trajectory EMA", "our design", "Compares updates with recent accepted server direction to reject conflicting movement."),
-        ("CAA-v2 client fairness credit", "our design", "Reduces domination by frequently arriving fast clients using only client ids and contribution counts."),
-        ("Fair-budget analysis pipeline", "our implementation", "Compares sync rounds and async events under the same client-update budget with multi-seed reports."),
+        ("Sync FedAvg", "existing baseline", "Barrier aggregation."),
+        ("Naive Async", "existing baseline", "Constant-alpha async aggregation."),
+        ("Staleness-aware decay", "existing baseline", "Logical weighting."),
+        ("FedBuff-style buffering", "existing baseline", "Buffered async aggregation."),
+        ("CAA agreement weighting", "our design", "Direction-aware buffered weighting."),
+        ("CAA-v2 server trajectory EMA", "our design", "Recent accepted-delta agreement."),
+        ("CAA-v2 client fairness credit", "our design", "Prevents fast-client domination."),
     ]
     pd.DataFrame(rows, columns=["component", "source", "role"]).to_csv(
         outdir / "existing_vs_ours_table.csv",

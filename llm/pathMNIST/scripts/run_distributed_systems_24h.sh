@@ -13,7 +13,7 @@ ACTION_LOG="$LOG_DIR/distsys24_actions_${STAMP}.log"
 MARKER="$LOG_DIR/distsys24_${STAMP}.marker"
 touch "$MARKER"
 
-CYCLES="${CYCLES:-144}"
+CYCLES="${CYCLES:-200}"
 INTERVAL_SECONDS="${INTERVAL_SECONDS:-600}"
 POLL_SECONDS="${POLL_SECONDS:-30}"
 IDLE_REPORT_SECONDS="${IDLE_REPORT_SECONDS:-3600}"
@@ -245,7 +245,7 @@ build_queue() {
   local variant
   local methods=(sync_fedavg naive_async staleness_async fedbuff_async caa_fedbuff_v2)
 
-  # 🏥 Stage 1: Qwen 在非獨立同分布（Non-IID）下的表現（多種子測試）
+  # 🏥 Stage 1: Qwen 在非獨立同分布（Non-IID）下的表現
   for seed in 42 43 44; do
     for alpha in 0.5 0.1; do
       for method in "${methods[@]}"; do

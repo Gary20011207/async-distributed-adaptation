@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--result-dir", default="results")
     parser.add_argument("--outdir", default="figures/report")
     parser.add_argument("--partition", default="iid")
-    parser.add_argument("--model", default="resnet18")
+    parser.add_argument("--model", default="qwen")
     return parser.parse_args()
 
 
@@ -51,7 +51,7 @@ def main() -> None:
     rows = [
         row
         for row in rows
-        if row["partition"] in ("", args.partition) and row["model"] == args.model
+        if args.partition in row["partition"] and row["model"] == args.model
     ]
     best_rows = _best_rows(rows)
     if best_rows.empty:
@@ -70,11 +70,16 @@ def _summary_row(path: Path) -> dict[str, Any]:
     summary = json.loads(path.read_text(encoding="utf-8"))
     config = summary.get("config", {})
     method = summary.get("method", "")
+    matched_method = "sync_fedavg"
+    for m in METHOD_ORDER:
+        if m in method:
+            matched_method = m
+            break
     return {
         "dataset": _dataset_from_summary(path, method, config),
         "method": method,
         "method_label": METHOD_LABELS.get(method, method),
-        "model": str(config.get("model", "resnet18")),
+        "model": str(config.get("model", "qwen")),
         "partition": config.get("partition", "iid") or "iid",
         "budget": _update_budget(summary, config),
         "best_acc": _to_float(summary.get("best_test_acc")),
@@ -209,14 +214,7 @@ def _method_pivot(frame: pd.DataFrame, column: str) -> pd.DataFrame:
 def _dataset_from_summary(path: Path, method: str, config: dict[str, Any]) -> str:
     if config.get("dataset"):
         return str(config["dataset"])
-    name = path.name
-    prefix = f"{method}_"
-    if name.startswith(prefix):
-        rest = name[len(prefix) :]
-        parts = rest.split("_")
-        if len(parts) >= 4:
-            return "_".join(parts[:-3])
-    return "pathmnist"
+    return "mmlu"
 
 
 def _update_budget(summary: dict[str, Any], config: dict[str, Any]) -> float | None:

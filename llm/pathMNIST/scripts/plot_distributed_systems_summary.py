@@ -32,15 +32,15 @@ METHOD_LABELS = {
     "caa_fedbuff_v2": "CAA-v2",
 }
 
-CORE_DATASETS = {"pathmnist", "pneumoniamnist", "bloodmnist", "organamnist"}
-STRESS_DATASETS = {"pathmnist", "bloodmnist", "organamnist"}
+CORE_DATASETS = {"mmlu"}
+STRESS_DATASETS = {"mmlu"}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create distributed-systems focused plots.")
     parser.add_argument("--result-dir", default="results")
     parser.add_argument("--outdir", default="figures/report")
-    parser.add_argument("--model", default="resnet18")
+    parser.add_argument("--model", default="qwen")
     return parser.parse_args()
 
 
@@ -109,7 +109,7 @@ def _summary_row(path: Path) -> dict[str, Any]:
         "method_label": METHOD_LABELS.get(method, method),
         "variant": variant,
         "seed": int(config.get("seed", 42)),
-        "model": str(config.get("model", "resnet18")),
+        "model": str(config.get("model", "qwen")),
         "partition": partition,
         "dirichlet_alpha": _to_float(config.get("dirichlet_alpha")),
         "delay_label": delay_label,
@@ -487,14 +487,7 @@ def _write_empty(outdir: Path) -> None:
 def _dataset_from_summary(path: Path, method: str, config: dict[str, Any]) -> str:
     if config.get("dataset"):
         return str(config["dataset"])
-    name = path.name
-    prefix = f"{method}_"
-    if name.startswith(prefix):
-        rest = name[len(prefix) :]
-        parts = rest.split("_")
-        if len(parts) >= 4:
-            return "_".join(parts[:-3])
-    return "pathmnist"
+    return "mmlu"
 
 
 def _update_budget(
