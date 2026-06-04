@@ -104,7 +104,7 @@ def save_checkpoint(
 
     num_classes = int(args_config.get("num_classes", 9))
     in_channels = int(args_config.get("in_channels", 3))
-    model_name = str(args_config.get("model", "resnet18"))
+    model_name = str(args_config.get("model", "qwen"))
     model = create_model(
         num_classes=num_classes,
         in_channels=in_channels,
