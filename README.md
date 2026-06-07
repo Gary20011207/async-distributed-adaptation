@@ -137,6 +137,7 @@ r13946001/                    Safe experiment copy and final implementation
   FINAL_RESULTS_SUMMARY.md    Clean final result summary
   NOVELTY_ASSESSMENT.md       Research positioning and novelty boundary
   presentation/               Proposal/report slides and speaker notes
+vqaFL/                        Qwen3-VL closed-ended VQA FL extension scaffold
 PP-DMA：Privacy-Preserving Distributed Model Adaptation.md
                               Project brief / proposal summary
 ```
