@@ -14,9 +14,9 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-PRESENT = ROOT / "r13946001" / "presentation"
+PRESENT = ROOT / "llm" / "presentation"
 ASSETS = PRESENT / "assets"
-REPORT = ROOT / "r13946001" / "pathMNIST" / "figures" / "report"
+REPORT = ROOT / "llm" / "pathMNIST" / "figures" / "report"
 
 METHOD_ORDER = ["sync_fedavg", "naive_async", "staleness_async", "fedbuff_async", "agreement_fedbuff_async", "caa_fedbuff_v2"]
 METHOD_LABEL = {
