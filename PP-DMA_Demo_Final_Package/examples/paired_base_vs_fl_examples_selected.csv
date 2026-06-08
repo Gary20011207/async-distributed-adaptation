@@ -1,0 +1,7 @@
+dataset,sample_index,question,choices,gold_answer,correct_Base,correct_CAA-v2,correct_Naive_Async,correct_Sync,parsed_answer_Base,parsed_answer_CAA-v2,parsed_answer_Naive_Async,parsed_answer_Sync,prediction_text_Base,prediction_text_CAA-v2,prediction_text_Naive_Async,prediction_text_Sync,selection_reason
+vqa_rad_closed,16,What abnormalities are in the lung apices?,Nodular opacities | not shown | uncertain | other,A,True,True,False,True,A,A,B,A,A,A,B,A,naive_wrong_caa_correct
+path_vqa_closed,40,is 70yof present?,yes | no |  | ,B,True,True,True,False,B,B,B,A,B,B,B,A,caa_correct_sync_or_naive_wrong
+path_vqa_closed,50,"does endocrine show esohagus, candida?",yes | no |  | ,B,True,True,True,False,B,B,B,A,B,B,B,A,caa_correct_sync_or_naive_wrong
+vqa_rad_closed,31,Is there air present under the diaphragm?,yes | no |  | ,B,True,True,True,False,B,B,B,A,B,B,B,A,caa_correct_sync_or_naive_wrong
+vqa_rad_closed,48,Can you evaluate a mediastinum in the shown image?,yes | no |  | ,B,True,True,True,False,B,B,B,A,B,B,B,A,caa_correct_sync_or_naive_wrong
+path_vqa_closed,1,do stress induce involution in baby with hyaline membrane disease?,yes | no |  | ,A,True,True,True,True,A,A,A,A,A,A,A,A,representative_caa_correct

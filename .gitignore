@@ -1,0 +1,30 @@
+# Python / packaging
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Experiment outputs
+results/
+figures/
+logs/
+checkpoints/
+data/
+results_demo*/
+figures_demo*/
+logs_demo*/
+checkpoints_demo*/
+*_demo_halfday/
+
+# Large or transient local presentation drafts.
+Group 4*.pptx
+Group 4*.pdf
+*.backup_*.pptx
+
+# Local editor / OS files
+.DS_Store
+Thumbs.db

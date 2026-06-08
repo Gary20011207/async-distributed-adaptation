@@ -1,0 +1,44 @@
+<!doctype html><html><head><meta charset="utf-8"><title>MLLM Report</title><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;margin:0;background:#f6f7f9;color:#18202a}section,h1{max-width:1120px;margin:28px auto;background:white;padding:28px;border-radius:8px;box-shadow:0 1px 4px #d7dce3}h1{font-size:34px}h2{font-size:25px;color:#17324d}p{font-size:18px;line-height:1.55}img{width:100%;max-height:560px;object-fit:contain;border:1px solid #e3e7ee;border-radius:6px;background:white}pre{white-space:pre-wrap;font-size:13px;background:#f1f3f6;padding:8px;border-radius:4px}
+</style></head><body><h1>Clockless Federated Adaptation for Medical LLM/MLLM</h1>
+<section><h2>1. Motivation</h2>
+<p>• 醫療資料無法集中，但不同醫院的硬體、網路、工作負載不同。</p>
+<p>• 同步 FL 會被慢節點拖住；非同步 FL 提高吞吐量，但會引入 stale update 與 fast-client domination。</p>
+<p>• 我們把問題限制在 closed-ended QA/VQA，讓答案空間有限，指標可以清楚比較。</p>
+<section><h2>2. Methodology</h2>
+<p>• Sync FedAvg：server 等齊所有 client update。</p>
+<p>• Naive Async：server 不等待，收到 update 就混合。</p>
+<p>• Staleness Async：用 logical version 估計 `server_version - client_start_version`。</p>
+<p>• FedBuff：buffer 到 B 個 update 再聚合。</p>
+<p>• CAA-v2：在 FedBuff 上加入 direction agreement、server trajectory EMA、delta clipping、client fairness credit。</p>
+<section><h2>3. What Is Ours vs Existing</h2>
+<pre>| Existing | Ours |</pre>
+<pre>|---|---|</pre>
+<pre>| FedAvg / FedBuff / staleness-aware FL | Clockless event-driven simulator for LLM/MLLM adapters |</pre>
+<pre>| LoRA / QLoRA / Qwen / Qwen2.5-VL | Sequential client adapter aggregation protocol |</pre>
+<pre>| Accuracy-only report | Accuracy + stability + staleness + invalid answer + client imbalance |</pre>
+<section><h2>4. Experiment Design</h2>
+<p>• Fair update budget：`async events = sync rounds × clients`。</p>
+<p>• Text MCQA：MMLU, MedMCQA, MedQA-USMLE, PubMedQA。</p>
+<p>• VQA：VQA-RAD, PathVQA。</p>
+<p>• 分開報告：`qwen_vl_proxy` 不混入 real `qwen2_5_vl_3b_qlora` headline。</p>
+<section><h2>5. Text MCQA Result</h2>
+<img src="../figures/report/closed_qa_method_comparison.png" alt="Closed QA">
+<p>Best mean row: pubmedqa / CAA-v2 / best=0.5000, final=0.4000.</p>
+<section><h2>6. Real Qwen2.5-VL VQA Result</h2>
+<img src="../figures/report/real_qwenvl_vqa_accuracy.png" alt="Real Qwen2.5-VL">
+<p>Best mean row: vqa_rad_closed / Naive Async / best=0.8750, final=0.8333.</p>
+<section><h2>7. Stability and Validity</h2>
+<img src="../figures/report/stability_drop_errorbar.png" alt="Stability">
+<img src="../figures/report/invalid_answer_rate_by_method.png" alt="Invalid Answer">
+<img src="../figures/report/qwenvl_prediction_validity.png" alt="Qwen2.5-VL Closed-Answer Diagnostics">
+<p>&gt; 這張圖是 base Qwen2.5-VL 的 closed-answer parsing sanity check；正式 method comparison 仍以上方 summary CSV 為準。</p>
+<img src="../figures/report/qwenvl_method_validity.png" alt="Qwen2.5-VL Method Diagnostics">
+<section><h2>8. Challenges</h2>
+<p>• 真 Qwen2.5-VL QLoRA 已可跑，但目前只適合 small fair-budget matrix；目前不宣稱大規模 multi-seed SOTA。</p>
+<p>• VQA closed-answer generation 需要解析生成文字，因此 invalid answer rate 很重要。</p>
+<p>• Proxy VQA 可用來 debug algorithm，但不能當 real MLLM headline。</p>
+<section><h2>9. Conclusion</h2>
+<p>• 專案貢獻是把 clockless async FL、LoRA/QLoRA adapter aggregation、closed-ended medical QA/VQA 串成可重現系統。</p>
+<p>• CAA-v2 是 course-project-level design extension：用 agreement/fairness/staleness 控制 async update 的穩定性。</p>
+<p>• 最保守主張：在 fair budget 下，async adapter FL 可以接近 Sync；CAA-v2 在部分 QA 場景改善 peak 或穩定性，但不是所有資料集都支配 baseline。</p></section></body></html>

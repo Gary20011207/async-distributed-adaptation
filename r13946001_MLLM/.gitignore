@@ -1,0 +1,10 @@
+results/
+figures/
+logs/
+checkpoints/
+data/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.cache/

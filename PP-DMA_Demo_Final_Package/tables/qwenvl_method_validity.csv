@@ -1,0 +1,11 @@
+dataset,method_label,valid_rate,accuracy,samples
+path_vqa_closed,CAA-v2,1.0,0.5,16
+path_vqa_closed,FedBuff,1.0,0.5,16
+path_vqa_closed,Naive Async,1.0,0.5,16
+path_vqa_closed,Staleness,1.0,0.5,16
+path_vqa_closed,Sync,1.0,0.625,16
+vqa_rad_closed,CAA-v2,1.0,0.75,16
+vqa_rad_closed,FedBuff,1.0,0.75,16
+vqa_rad_closed,Naive Async,1.0,0.8125,16
+vqa_rad_closed,Staleness,1.0,0.8125,16
+vqa_rad_closed,Sync,1.0,0.75,16

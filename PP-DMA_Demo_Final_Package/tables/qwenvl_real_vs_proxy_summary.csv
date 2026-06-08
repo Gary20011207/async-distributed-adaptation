@@ -1,0 +1,32 @@
+dataset,backend_group,model,backend,method_label,runs,best_acc_mean,final_acc_mean,stability_drop_mean,invalid_answer_rate_mean
+path_vqa_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,CAA-v2,1,0.8066666666666666,0.7433333333333333,0.06333333333333335,0.0
+path_vqa_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,FedBuff,1,0.81,0.7533333333333333,0.056666666666666754,0.0
+path_vqa_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,Naive Async,1,0.8166666666666667,0.7966666666666666,0.020000000000000018,0.0
+path_vqa_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,Staleness,1,0.82,0.7833333333333333,0.036666666666666625,0.0
+path_vqa_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,Sync,1,0.82,0.82,0.0,0.0
+path_vqa_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,CAA-v2,3,0.7855555555555555,0.778888888888889,0.006666666666666672,0.0
+path_vqa_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,FedBuff,3,0.7944444444444444,0.7888888888888889,0.005555555555555573,0.0
+path_vqa_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,Naive Async,3,0.7966666666666665,0.7877777777777778,0.008888888888888872,0.0
+path_vqa_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,Staleness,3,0.7988888888888889,0.7877777777777778,0.011111111111111072,0.0
+path_vqa_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,Sync,3,0.7911111111111112,0.7911111111111112,0.0,0.0
+path_vqa_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,CAA-v2,3,0.625,0.625,0.0,0.0
+path_vqa_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,FedBuff,3,0.625,0.625,0.0,0.0
+path_vqa_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,Naive Async,3,0.625,0.625,0.0,0.0
+path_vqa_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,Staleness,3,0.625,0.625,0.0,0.0
+path_vqa_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,Sync,3,0.6666666666666666,0.6666666666666666,0.0,0.0
+vqa_rad_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,CAA-v1,1,0.7566666666666667,0.7533333333333333,0.0033333333333334103,0.0
+vqa_rad_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,CAA-v2,1,0.75,0.75,0.0,0.0
+vqa_rad_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,FedBuff,1,0.7566666666666667,0.7533333333333333,0.0033333333333334103,0.0
+vqa_rad_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,Naive Async,1,0.7733333333333333,0.7633333333333333,0.010000000000000009,0.0
+vqa_rad_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,Staleness,1,0.7733333333333333,0.7566666666666667,0.016666666666666607,0.0
+vqa_rad_closed,proxy_vqa,qwen2_5_vl_3b_qlora,compact_vqa_proxy_for_qwen_vl,Sync,1,0.7733333333333333,0.7633333333333333,0.010000000000000009,0.0
+vqa_rad_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,CAA-v2,3,0.7466666666666667,0.7355555555555555,0.011111111111111108,0.0
+vqa_rad_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,FedBuff,3,0.7466666666666667,0.7444444444444445,0.0022222222222221997,0.0
+vqa_rad_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,Naive Async,3,0.7511111111111112,0.7444444444444445,0.006666666666666672,0.0
+vqa_rad_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,Staleness,3,0.7522222222222222,0.7488888888888888,0.003333333333333336,0.0
+vqa_rad_closed,proxy_vqa,qwen_vl_proxy,compact_vqa_proxy,Sync,3,0.7422222222222222,0.7422222222222222,0.0,0.0
+vqa_rad_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,CAA-v2,3,0.8333333333333334,0.8333333333333334,0.0,0.0
+vqa_rad_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,FedBuff,3,0.8333333333333334,0.8333333333333334,0.0,0.0
+vqa_rad_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,Naive Async,3,0.875,0.8333333333333334,0.041666666666666664,0.0
+vqa_rad_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,Staleness,3,0.875,0.8333333333333334,0.041666666666666664,0.0
+vqa_rad_closed,real_qwenvl,qwen2_5_vl_3b_qlora,qwen2_5_vl_3b_4bit_lora_generative,Sync,3,0.8333333333333334,0.8333333333333334,0.0,0.0

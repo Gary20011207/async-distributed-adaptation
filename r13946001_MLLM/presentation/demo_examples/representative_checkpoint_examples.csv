@@ -1,0 +1,7 @@
+dataset,method_label,sample_index,question,parsed_answer,gold_answer,correct
+vqa_rad_closed,CAA-v2,1,Is there air present under the diaphragm?,B,B,True
+vqa_rad_closed,CAA-v2,2,Which hemisphere of the brain are the lesions located in?,A,A,True
+vqa_rad_closed,Naive Async,0,What is the hypodensity in the liver?,A,A,True
+vqa_rad_closed,Naive Async,1,Is there air present under the diaphragm?,B,B,True
+vqa_rad_closed,Sync,0,What is the hypodensity in the liver?,A,A,True
+vqa_rad_closed,Sync,2,Which hemisphere of the brain are the lesions located in?,A,A,True
