@@ -1,69 +1,91 @@
-# PP-DMA：Privacy-Preserving Distributed Model Adaptation
+# PP-DMA: Privacy-Preserving Distributed Model Adaptation
 
-**Clockless Federated Adaptation for Medical Imaging**
+**Clockless Federated Adaptation for Medical AI**
 
-This document is the updated project brief for Group 4. The project started as
-**Asynchronous Distributed ML Adaptation** and has converged into a concrete
-federated learning system study:
+This document is the public-facing project report for Group 4.  The project
+started as **Asynchronous Distributed ML Adaptation** and gradually became a
+broader distributed-systems study:
 
-> In a privacy-preserving medical FL setting where raw data stays local, how
-> should a server aggregate asynchronous updates when there is no global clock
-> and some updates are stale or conflicting?
+> When medical data must stay local, can we adapt image models and LLM/MLLM
+> models through federated learning without waiting for every client, while
+> still controlling stale and conflicting updates?
+
+The key idea is simple.  Hospitals, devices, or departments do not train at the
+same speed.  A fast client may send many updates, while a slow client may send
+an update computed from an old global model.  This is useful for a distributed
+systems project because it turns machine learning into a system problem:
+ordering events, handling stragglers, and deciding how much to trust stale
+updates.
 
 ## Members
 
 | Name | Student ID | Department |
-|---|---|---|
-| 陳冠宇 | R13946001 | Data Science |
-| 張光澄 | R14922172 | Computer Science |
-| 張育嘉 | R14922140 | Computer Science |
+| --- | --- | --- |
+| Guan-Yu Chen | R13946001 | Data Science |
+| Guang-Cheng Zhang | R14922172 | Computer Science |
+| Yu-Jia Zhang | R14922140 | Computer Science |
 
 ## Motivation
 
-Medical AI is a good example of distributed learning:
+Medical AI is a natural privacy-preserving distributed learning scenario.
 
-- Hospitals should not centralize raw medical images.
-- Different hospitals have different GPUs, network conditions, and workloads.
-- Patient populations and imaging devices differ, so data can be non-IID.
-- A slow hospital may return an update trained from an old global model.
+- A hospital may not be allowed to send raw images or clinical questions to a
+  central server.
+- Different hospitals may have different GPUs, network quality, workloads, and
+  patient distributions.
+- A synchronous training round is easy to reason about, but the server must wait
+  for slow clients.
+- An asynchronous system is faster, but the server receives updates that may be
+  stale, conflicting, or dominated by fast clients.
 
-Synchronous FL is stable but waits for slow hospitals. Asynchronous FL avoids the
-barrier, but stale updates can hurt convergence. Therefore, the project asks:
+This project asks:
 
-> Can asynchronous FL approach Sync FedAvg under a fair update budget while
-> controlling stale updates, stragglers, and fast-client domination?
+> Under a fair update budget, can asynchronous federated adaptation approach
+> Sync FedAvg while reducing the instability caused by stale updates and
+> stragglers?
 
 ## Distributed Systems Framing
 
-The key concept is **no global clock**. We do not assume synchronized physical
-time across clients. Instead, the server assigns logical model versions:
+The central distributed-systems concept is **no global clock**.
+
+We do not assume that all clients share a synchronized physical timestamp.
+Instead, the server tracks logical model versions:
 
 ```text
-server_version = current global model version
-client_start_version = version received by a client before local training
-staleness = server_version - client_start_version
+server_version       = current global model version
+client_start_version = version received by the client before local training
+staleness            = server_version - client_start_version
 ```
 
-This turns asynchronous FL into an event-ordering problem:
+This lets us describe stale updates without relying on physical time.  The
+system is asynchronous because the server does not wait for all clients before
+moving forward.  It processes updates as they arrive, or after a small async
+buffer is filled.
 
-- The server observes update arrival order.
-- Arrival order is not the same as training start order.
-- Late updates may contain stale or conflicting information.
-- Fast clients can dominate the event stream if aggregation is naive.
+This gives the project four concrete system questions:
 
-## Final Direction
+1. What happens when the server does not use a round barrier?
+2. How much does staleness hurt convergence and stability?
+3. Do stragglers change the behavior of asynchronous learning?
+4. Do fast clients dominate the aggregation stream?
 
-We focus on **federated medical image classification** with MedMNIST and
-ResNet18. The implementation is a reproducible course-project research/demo
-codebase, not a production FL framework.
+## Project Scope
 
-Main runnable code:
+The project has two connected tracks.
+
+### Track 1: MedMNIST Image Classification
+
+This is the main algorithmic research track.  We simulate federated medical
+image classification using MedMNIST datasets and compare synchronous and
+asynchronous aggregation methods.
+
+Main code:
 
 ```text
 r13946001/pathMNIST/
 ```
 
-Main report files:
+Main outputs:
 
 ```text
 r13946001/REPORT_NOTES.md
@@ -72,22 +94,61 @@ r13946001/NOVELTY_ASSESSMENT.md
 r13946001/presentation/
 ```
 
+### Track 2: LLM/MLLM Medical QA and VQA DEMO
+
+This is the demo-oriented extension.  We apply the same clockless aggregation
+idea to LoRA / QLoRA adapter updates for medical text QA and visual question
+answering.
+
+Main code and report support:
+
+```text
+r13946001_MLLM/
+PP-DMA_Demo_Final_Package/
+```
+
+The final handoff package is:
+
+```text
+PP-DMA_Demo_Final_Package/slides/PP-DMA_Demo_Final.pptx
+PP-DMA_Demo_Final_Package/docs/LLM_MLLM_DEMO_REFERENCE.md
+PP-DMA_Demo_Final_Package/docs/demo_final_speaker_notes_zh.md
+```
+
 ## Methods
 
+We compare standard baselines with our CAA-family methods.
+
 | Method | Role | Idea |
-|---|---|---|
-| Sync FedAvg | baseline | Wait for all clients in each round. |
+| --- | --- | --- |
+| Sync FedAvg | baseline | Wait for all selected clients in each round, then average. |
 | Naive Async | baseline | Apply each arriving update immediately. |
-| Staleness Async | baseline | Reduce update weight by logical staleness. |
-| FedBuff-lite | baseline | Aggregate a buffer of async updates. |
-| CAA-FedBuff | proposed v1 | Add direction agreement, clipping, and adaptive alpha. |
-| CAA-v2 | final proposed method | Add server trajectory memory and client fairness credit. |
+| Staleness Async | baseline | Downweight an update based only on logical staleness. |
+| FedBuff-lite | baseline | Collect a small buffer of async updates before aggregation. |
+| CAA-FedBuff | proposed v1 | Add direction agreement, delta clipping, and adaptive alpha. |
+| CAA-v2 | final method | Add server trajectory memory and client fairness credit. |
 
-CAA-v2 is the final method because it is the clearest distributed-systems
-tradeoff. It is not the most aggressive peak-accuracy method, but it is more
-stable and more explainable than naive async or CAA-v1.
+CAA-v2 is the final method because it has the clearest distributed-systems
+interpretation.  It is not just trying to maximize one lucky peak accuracy.  It
+tries to keep async training close to Sync FedAvg while making the server more
+careful about stale, conflicting, and over-represented client updates.
 
-## CAA-v2 Algorithm
+## CAA-v2 in Plain English
+
+When a client sends an update, the server asks four questions:
+
+1. **How old is this update?**  
+   A stale update receives less weight.
+
+2. **Does this update point in a similar direction as other accepted updates?**  
+   An update that agrees with the buffer and recent server trajectory receives
+   more trust.
+
+3. **Is this update unusually large?**  
+   Large deltas are clipped to reduce unstable jumps.
+
+4. **Has this client already contributed too often?**  
+   A fast client receives less extra advantage over time, reducing domination.
 
 For each buffered client update:
 
@@ -96,7 +157,7 @@ delta_i = client_model_i - model_at_client_start_i
 tau_i   = server_version - client_start_version_i
 ```
 
-CAA-v2 computes a server-side aggregation weight:
+The server computes:
 
 ```text
 raw_weight_i =
@@ -106,71 +167,87 @@ raw_weight_i =
   * fairness_credit_i
 ```
 
-where:
+Then the server normalizes these weights and applies a weighted delta update.
+The rule is **clockless** because it uses logical versions, model deltas, and
+client contribution counts instead of synchronized physical time.
 
-- `staleness_decay(tau_i)` downweights old updates.
-- `agreement_factor_i` checks whether the update direction agrees with the
-  buffer and the recent accepted server trajectory.
-- `fairness_credit_i` reduces long-term domination by frequently arriving fast
-  clients.
-- adaptive server alpha becomes larger when agreement is high and smaller when
-  mean staleness is high.
+## CAA-v2 for LLM/MLLM Adapters
 
-The rule is **clockless**: it uses logical version, delta direction, and client
-contribution count, not physical synchronized time.
+For large language and multimodal models, aggregating the whole model is too
+expensive.  Therefore, the LLM/MLLM demo uses adapter-level federated
+adaptation.
+
+The base model is frozen, and each client trains only a LoRA or QLoRA adapter:
+
+```text
+delta_i = local_adapter_i - global_adapter_at_client_start
+```
+
+The server aggregates adapter deltas using the same CAA-v2 logic:
+
+- logical staleness;
+- direction agreement;
+- server trajectory memory;
+- client fairness credit;
+- adaptive alpha.
+
+This makes the method practical enough for a demo with medical closed-ended
+question answering and VQA.  The answer space is finite, such as `A/B/C/D` or
+`yes/no`, so the evaluation can use accuracy and invalid-answer rate.
 
 ## What Is Existing vs What Is Ours
 
 | Component | Source | Role |
-|---|---|---|
-| FedAvg | existing | Sync baseline. |
-| FedAsync / staleness-aware AFL | existing | Async and staleness baselines. |
-| FedBuff | existing | Buffered async baseline. |
-| MedMNIST | existing benchmark | Biomedical image datasets. |
-| ResNet18 / MobileNetV3 / small CNN | existing models | Classification backbones. |
-| Clockless event-driven simulator | ours | Simulates async arrivals with logical versions. |
-| Fair update-budget protocol | ours | Uses `async events = sync rounds * clients`. |
-| CAA-FedBuff / CAA-v2 | ours | Agreement/fairness-aware buffered aggregation rules. |
-| Distributed-systems analysis pipeline | ours | Staleness, simulated time, client Gini, stability drop. |
+| --- | --- | --- |
+| FedAvg | existing | Synchronous FL baseline. |
+| FedAsync / staleness-aware aggregation | existing | Async and stale-update baselines. |
+| FedBuff | existing | Buffered async aggregation baseline. |
+| MedMNIST | existing benchmark | Biomedical image classification datasets. |
+| Qwen / Qwen2.5-VL / Qwen3-VL | existing models | Base LLM/MLLM backbones. |
+| LoRA / QLoRA | existing adaptation method | Parameter-efficient local adaptation. |
+| CAA-v2 aggregation rule | ours | Agreement/fairness-aware clockless aggregation. |
+| Event-driven simulator | ours | Simulates async arrivals and logical staleness. |
+| Fair update-budget protocol | ours | Compares async events with sync client-update count. |
+| Report and visualization pipeline | ours | Tracks accuracy, staleness, stability, simulated time, and client imbalance. |
 
-## Experimental Setup
+## Experimental Setup: Image Classification
 
-Official headline matrix:
+The MedMNIST research track uses a fair multi-seed matrix:
 
 ```text
-9 MedMNIST datasets
-6 methods
-3 seeds per dataset/method
-ResNet18
-IID partition
-fair update budget
+datasets = 9 MedMNIST datasets
+methods  = 6 methods
+seeds    = 42, 43, 44
+model    = ResNet18
+partition = IID
+fair budget = async events = sync rounds * clients
 ```
 
 Datasets:
 
 ```text
-pathmnist, pneumoniamnist, bloodmnist, organamnist, organcmnist,
-dermamnist, octmnist, breastmnist, tissuemnist
+PathMNIST, PneumoniaMNIST, BloodMNIST, OrganAMNIST, OrganCMNIST,
+DermaMNIST, OCTMNIST, BreastMNIST, TissueMNIST
 ```
 
 Fairness controls:
 
 | Control | Setting |
-|---|---|
+| --- | --- |
 | Clients | 10 |
 | Local epochs | 1 |
 | Batch size | 128 |
-| LR scheduler | cosine, lr=0.01, min_lr=0.0001 |
-| Async delay | same heterogeneous setting across async baselines |
-| Budget | `async events = sync rounds * clients` |
+| Learning rate | 0.01 with cosine scheduler |
+| Async delay | Same heterogeneous setting across async baselines |
+| Update budget | `async events = sync rounds * clients` |
 | Seeds | 42, 43, 44 |
 
-## Headline Results
+## Image Classification Results
 
-Overall mean across 9 datasets:
+Overall mean across the 9-dataset fair matrix:
 
 | Method | Best Acc Mean | Final Acc Mean | Stability Drop |
-|---|---:|---:|---:|
+| --- | ---: | ---: | ---: |
 | Sync FedAvg | 0.7142 | 0.7121 | 0.0020 |
 | Naive Async | 0.7132 | 0.7096 | 0.0036 |
 | Staleness Async | 0.6770 | 0.6752 | 0.0017 |
@@ -182,101 +259,167 @@ Main findings:
 
 - CAA-v2 beats Sync FedAvg in mean best accuracy on `6/9` datasets.
 - CAA-v2 beats Sync FedAvg in mean final accuracy on `6/9` datasets.
-- CAA-v2 beats the strongest classic baseline among Sync/Naive/Staleness/FedBuff
-  on `5/9` datasets.
-- Staleness-only aggregation is stable but too conservative.
-- CAA-v1 has the strongest peak accuracy, but larger stability drop.
-- CAA-v2 is the best final story because it balances performance, stability,
-  and distributed-systems interpretability.
+- CAA-v2 beats the strongest classic baseline among Sync, Naive Async,
+  Staleness Async, and FedBuff-lite on `5/9` datasets.
+- Staleness-only aggregation is stable but often too conservative.
+- CAA-FedBuff v1 has the highest peak accuracy, but a larger stability drop.
+- CAA-v2 is the cleaner final method because it balances performance,
+  stability, and interpretability.
 
-Recommended claim:
+Recommended image-classification claim:
 
 > Under a fair update budget, CAA-v2 makes clockless asynchronous FL approach
 > Sync FedAvg across diverse MedMNIST datasets, while reducing the instability
 > of naive async and avoiding the over-conservatism of staleness-only
 > aggregation.
 
+## LLM/MLLM DEMO Results
+
+The final demo integrates peer Qwen3-VL results and local LLM/MLLM support
+experiments.
+
+### Main VQA Demo: Qwen3-VL + PMC-VQA
+
+| Method | Correct / Total | Accuracy |
+| --- | ---: | ---: |
+| Sync FedAvg | 47 / 100 | 47.0% |
+| Naive Async | 46 / 100 | 46.0% |
+| Staleness Async | 45 / 100 | 45.0% |
+| FedBuff | 44 / 100 | 44.0% |
+| CAA-v2 | 47 / 100 | 47.0% |
+
+Conservative demo claim:
+
+> In the Qwen3-VL + PMC-VQA pilot, CAA-v2 ties Sync FedAvg and is the strongest
+> async-family method in that run.
+
+### Local Text MCQA Support
+
+Local text QA experiments use Qwen1.5-0.5B with LoRA on closed-ended medical
+QA datasets.  CAA-v2 has the highest mean best accuracy, while Sync FedAvg
+remains slightly better in final stability.  This supports the method but does
+not claim a universal win.
+
+### Local Real Qwen2.5-VL Feasibility
+
+The real Qwen2.5-VL 3B 4-bit QLoRA diagnostic shows a 100% closed-answer valid
+rate.  This means adapter aggregation did not break the output format, but the
+run is intentionally small and should be treated as feasibility evidence rather
+than a large benchmark.
+
+### Paired VQA Examples
+
+The demo package includes four same-question VQA examples with images:
+
+```text
+VQA-RAD #16
+PathVQA #40
+PathVQA #50
+VQA-RAD #31
+```
+
+These examples compare Base, Naive Async, Sync, and CAA-v2 on the same image
+and question.  They show cases where CAA-v2 is correct while Naive Async or
+Sync is incorrect.
+
+Important boundary:
+
+> We did not find a valid same-question example where the base model is wrong
+> and CAA-v2 is correct.  Therefore, the demo should not claim "before training
+> wrong, after training correct" for the same question.  The correct statement
+> is that CAA-v2 can correct some errors made by other federated aggregation
+> baselines in selected same-question diagnostics.
+
 ## Evaluation Metrics
 
-We report more than accuracy:
+We evaluate both ML performance and system behavior.
 
 | Metric | Meaning |
-|---|---|
-| Async-Sync Best Gap | Peak accuracy cost of removing the sync barrier. |
-| Async-Sync Final Gap | Whether async converges near sync at the end. |
-| Stability Drop | `best_acc - final_acc`; oscillation after the best point. |
-| p95 staleness | Tail logical delay under async arrivals. |
-| client contribution Gini | Whether fast clients dominate accepted updates. |
-| time-to-accuracy | Simulated time needed to approach best performance. |
+| --- | --- |
+| Best accuracy | Best model quality reached during training. |
+| Final accuracy | Whether the method remains stable at the end. |
+| Stability drop | `best_acc - final_acc`; how much the method oscillates. |
+| Async-Sync best gap | Peak accuracy cost of removing the sync barrier. |
+| Async-Sync final gap | Whether async converges close to Sync FedAvg. |
+| Average / p95 staleness | Logical delay under async arrivals. |
+| Client contribution Gini | Whether fast clients dominate accepted updates. |
+| Invalid answer rate | Whether an LLM/MLLM follows the closed-answer format. |
 
 ## Deliverables
 
-Implemented:
+Implemented and prepared:
 
-- CSV logging and summary JSON for every run.
-- Best checkpoint saving.
-- General staleness decay functions.
-- Event-driven async simulation with heterogeneous delays.
-- FedBuff-lite and CAA-family methods.
-- Multi-dataset MedMNIST support.
-- Dirichlet non-IID partitions.
-- ResNet18, small CNN, and MobileNetV3-small support.
-- Plotting and report summary scripts.
-- Chinese and English presentation materials.
+- Clockless event-driven async FL simulator.
+- Sync, Naive Async, Staleness Async, FedBuff-lite, CAA-FedBuff, and CAA-v2.
+- MedMNIST multi-dataset experiments with multi-seed summaries.
+- Non-IID and straggler/delay stress analysis.
+- LLM/MLLM adapter-level FL prototype.
+- Qwen3-VL, Qwen2.5-VL, and text MCQA result summaries.
+- Final demo slides and a clean handoff package.
+
+Important handoff files:
+
+```text
+PP-DMA_Demo_Final_Package/slides/PP-DMA_Demo_Final.pptx
+PP-DMA_Demo_Final_Package/docs/LLM_MLLM_DEMO_REFERENCE.md
+PP-DMA_Demo_Final_Package/assets/paired_image_examples.png
+r13946001/REPORT_NOTES.md
+r13946001_MLLM/FINAL_RESULTS_SUMMARY.md
+```
 
 ## How To Run
 
-Install:
+MedMNIST smoke test:
 
 ```bash
 cd r13946001/pathMNIST
 python -m pip install -e .
-```
 
-Smoke test:
-
-```bash
 PYTHONPATH=src python src/fed_pathmnist/run.py \
   --synthetic --method caa_fedbuff_v2 \
   --events 4 --clients 2 --buffer-size 2 \
   --model small_cnn --device cpu
 ```
 
-Official-style PathMNIST run:
+LLM/MLLM smoke test:
 
 ```bash
-PYTHONPATH=src python src/fed_pathmnist/run.py \
-  --dataset pathmnist --method caa_fedbuff_v2 \
-  --events 1000 --clients 10 --buffer-size 5 \
-  --batch-size 128 --lr 0.01 --lr-scheduler cosine --min-lr 0.0001 \
-  --local-epochs 1 --augment --delay-mode heterogeneous \
-  --device cuda --save-best
+cd r13946001_MLLM
+python -m pip install -e .
+
+PYTHONPATH=src python src/fed_mllm/run.py \
+  --synthetic --task text_mcqa --dataset mmlu \
+  --model tiny_text --method caa_fedbuff_v2 \
+  --events 4 --clients 2 --buffer-size 2 --device cpu
 ```
 
-Regenerate report:
+Regenerate the final demo deck:
 
 ```bash
-PYTHONPATH=src python -m fed_pathmnist.plot_results --csv results/*.csv --outdir figures
-python scripts/plot_report_summary.py --result-dir results --outdir figures/report
-python scripts/plot_seeded_summary.py --result-dir results --outdir figures/report
-python scripts/plot_distributed_systems_summary.py --result-dir results --outdir figures/report
-python scripts/summarize_results.py --result-dir results --out ../REPORT_NOTES.md
+cd r13946001_MLLM
+python scripts/create_demo_final_deck.py
 ```
 
-## Novelty Boundary
+## Limitations
 
-CAA-v2 has course-project and workshop/demo value, especially as a
-distributed-systems implementation and evaluation. It should not be overstated
-as a new state-of-the-art FL algorithm. Its value is in:
+This project is privacy-preserving in the federated-learning sense that raw
+client data stays local in the simulation.  It does not yet implement
+cryptographic secure aggregation, differential privacy, or a real hospital
+network deployment.
 
-- the clockless framing,
-- the explicit aggregation rule,
-- the fair update-budget comparison,
-- the multi-dataset/multi-seed study,
-- the system metrics beyond accuracy.
+The LLM/MLLM experiments are demo and feasibility evidence.  The Qwen3-VL
+PMC-VQA result is a pilot, and the real Qwen2.5-VL runs are intentionally small.
+Future work should include larger VQA evaluation, stronger paired before/after
+diagnostics, real network traces, secure aggregation, and privacy guarantees.
 
-## Privacy Boundary
+## Final Takeaway
 
-The project keeps raw images local in the federated-learning simulation. It does
-not yet implement secure aggregation, differential privacy, or real hospital
-deployment. Those are natural future extensions.
+PP-DMA shows that asynchronous federated adaptation is not only an ML problem.
+It is a distributed-systems problem about time, ordering, delay, stale
+information, and fairness.
+
+CAA-v2 provides a simple and explainable clockless aggregation rule.  Across
+the MedMNIST experiments it approaches Sync FedAvg under a fair update budget.
+In the LLM/MLLM demo, the same idea can be applied to adapter deltas, and the
+Qwen3-VL pilot shows CAA-v2 matching Sync while outperforming other async
+baselines.
