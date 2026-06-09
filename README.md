@@ -139,6 +139,26 @@ Local LLM/MLLM support:
   some Naive Async or Sync errors.  We do **not** claim a base-wrong /
   CAA-correct before-after improvement when no exact paired case was found.
 
+## What the Results Mean: Sync vs Async
+
+The results should be read as a distributed-systems tradeoff, not only an
+accuracy contest.
+
+- **Sync FedAvg is the safest baseline** when waiting is acceptable.  It is
+  stable because the server uses a round barrier.
+- **Naive Async removes the barrier**, so it better matches real heterogeneous
+  systems, but stale or conflicting updates can hurt stability.
+- **Staleness-only async is safe but often too conservative**, because it only
+  looks at logical age and ignores whether an update direction is useful.
+- **CAA-v2 is the project answer**: it keeps the asynchronous, no-waiting
+  setting, but adds clockless agreement and fairness signals so async behavior
+  can approach Sync FedAvg more reliably.
+
+This connects back to the motivation: hospitals should not have to centralize
+data or wait for every slow site forever.  The practical distributed benefit is
+not that async always beats sync; it is that async can reduce barrier waiting
+while CAA-v2 helps control the correctness cost of stale updates.
+
 ## MedMNIST Research Track
 
 The MedMNIST track is under:
@@ -252,3 +272,14 @@ Use conservative wording:
   SOTA publication.
 - The LLM/MLLM results are demo and feasibility evidence; the Qwen3-VL PMC-VQA
   result is a pilot, while local Qwen2.5-VL is a small diagnostic matrix.
+
+## License and Usage
+
+This repository is shared as educational and research/demo material for the
+Distributed Computing Systems course project.  It is not medical software and
+must not be used for clinical diagnosis or treatment decisions.
+
+Upstream datasets, pretrained models, and libraries remain governed by their own
+licenses and terms.  Before any public release beyond the course context, the
+team should add a formal `LICENSE` file and verify that all dataset/model usage
+is compatible with the intended distribution.
